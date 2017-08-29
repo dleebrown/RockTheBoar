@@ -1,11 +1,10 @@
-
 # coding: utf-8
 
 # # Visual Data Analysis
 
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python docker image: https://github.com/kaggle/docker-python
-# For exaample, here's several helpful packages to load in 
+# For example, here's several helpful packages to load in 
 
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
@@ -16,7 +15,7 @@ import matplotlib.pylab as plt
 # For example, running this (by clicking run or pressing Shift+Enter) will list the files in the input directory
 
 from subprocess import check_output
-print(check_output(["ls", "../input"]).decode("utf8"))
+print(check_output(["ls", "../../../input"]).decode("utf8"))
 
 # Any results you write to the current directory are saved as output.
 
@@ -38,7 +37,7 @@ print(check_output(["ls", "../input"]).decode("utf8"))
 import os 
 from glob import glob
 
-INPUT_PATH = '../input'
+INPUT_PATH = '../../../input'
 DATA_PATH = INPUT_PATH
 TRAIN_DATA = os.path.join(DATA_PATH, "train")
 TRAIN_MASKS_DATA = os.path.join(DATA_PATH, "train_masks")
@@ -447,9 +446,3 @@ for gname in models_in_train_and_test[:10]:
             plt.imshow(first_train_mask, alpha=0.50)
             
 plt.show()
-
-
-
-
-
-
