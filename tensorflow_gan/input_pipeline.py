@@ -4,8 +4,8 @@ from PIL import Image
 import os
 import random
 
-car_image_directory = '/home/sinandeger/kaggle Competitions/Carvana Image Masking Challenge/train/'
-mask_image_directory = '/home/sinandeger/kaggle Competitions/Carvana Image Masking Challenge/train_masks/'
+car_image_directory = '__RGB_CAR_IMAGES_DIRECTORY__'
+mask_image_directory = '__B&W_MASK_IMAGES_DIRECTORY__'
 
 def image_input(mask_image_title, car_image_title):
 
