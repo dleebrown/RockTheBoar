@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 # Hyper-parameters
 num_train = 16  # while protoyping, otherwise: len(ids_train)
 learning_rate = 1e-3
-num_epochs = 5
+num_epochs = 2
 batch_size = 5
 #-----------------------------------------------------------------------
 # load model architecture
@@ -94,3 +94,5 @@ pd.DataFrame(history.history)[['loss', 'val_loss']].plot()
 pd.DataFrame(history.history)[['acc', 'val_acc']].plot()
 
 plt.show()
+
+io_functions.exportSubmissionFile('submission')
