@@ -92,3 +92,80 @@ def saveModel(TrainedModel, TrainingHistory, fileOut):
 
     print('final acc - train and val')
     print(train_acc[-1], val_acc[-1])
+
+
+#-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
+
+
+def rle_encode(mask_image):
+    pixels = mask_image.flatten()
+    # We avoid issues with '1' at the start or end (at the corners of 
+    # the original image) by setting those pixels to '0' explicitly.
+    # We do not expect these to be non-zero for an accurate mask, 
+    # so this should not harm the score.
+    pixels[0] = 0
+    pixels[-1] = 0
+    runs = np.where(pixels[1:] != pixels[:-1])[0] + 2
+    runs[1::2] = runs[1::2] - runs[:-1:2]
+    return runs
+
+def rle_to_string(runs):
+    return ' '.join(str(x) for x in runs)
+
+
+#-----------------------------------------------------------------------
+
+
+def exportSubmissionFile(fileOut):
+    #print("Generating submission file")
+    #df = pd.DataFrame({'img': names, 'rle_mask': rles})
+    #df.to_csv(fileOut+'.csv.gz', index=False, compression='gzip')
+   
+
+    file_name = get_car_image_files(image_id)[0].split("/")[-1]
+    mask_rle = train_masks_df[train_masks_df['img'] == file_name]["rle_mask"].iloc[0]
+    assert rle_to_string(rle_encode(mask)) == mask_rle, "Mask rle don't match"
+    
+    print("Mask rle match!")
+
+
+def get_car_image_files(car_image_id, get_mask=False):
+    if get_mask:
+        if car_image_id in masks_ids:
+            return [train_masks_data + "/" + s for s in train_masks_files if car_image_id in s]
+        else:
+            raise Exception("No mask with this ID found")
+    elif car_image_id in train_ids:
+        return [train_data + "/" + s for s in train_files if car_image_id in s]
+    elif car_image_id in test_ids:
+        return [test_data + "/" + s for s in test_files if car_image_id in s]
+    raise Exception("No image with this ID found")
+    
+#-----------------------------------------------------------------------
+
+def get_image_matrix(image_path):
+    img = Image.open(image_path)
+    return np.asarray(img, dtype=np.uint8)
+
+#-----------------------------------------------------------------------
+
+def plotMask(image_id):
+    image_id = train_ids[0]
+
+    plt.figure(figsize=(20, 20))
+    img = get_image_matrix(get_car_image_files(image_id)[0])
+    mask = get_image_matrix(get_car_image_files(image_id, True)[0])
+    img_masked = cv2.bitwise_and(img, img, mask=mask)
+
+    print("Image shape: {} | image type: {} | mask shape: {} | mask type: {}".format(img.shape, img.dtype, mask.shape, mask.dtype) )
+
+    plt.subplot(131)
+    plt.imshow(img)
+    plt.subplot(132)
+    plt.imshow(mask)
+    plt.subplot(133)
+    plt.imshow(img_masked)
+    plt.show()
+#-----------------------------------------------------------------------
+
