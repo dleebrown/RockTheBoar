@@ -6,6 +6,8 @@ import os
 """Just a test script to look at the data while I build the NN
 """
 
+print(int(0.2))
+print(int(0.6))
 data_loc = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
 files = [img for img in os.listdir(data_loc) if '.jpg' in img]
 

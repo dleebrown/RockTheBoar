@@ -13,15 +13,17 @@ ReLU
 2x2x1 maxpooling (959x640x16)
 3x3x16->128 (959x640x128)
 ReLU
-2x2x1 maxpooling (479x320x128)
+2x2x1 maxpooling (480x320x128)
 3x3x128->256 (479x320x256)
 ReLU
-2x2x1 maxpooling (239x160x256)
+2x2x1 maxpooling (240x160x256)
 flatten (9789440)
 fully-connected layer 9789440 -> 4194304 (2^22)
 dropout
 ReLU
 fully-connected layer 4194304 (2^20) -> 2455040
+
+TESTING WITH LARGER MAXPOOL
 
 cross-entropy (softmax) cost
 adam optimizer
@@ -29,31 +31,29 @@ adam optimizer
 need to work on how we want to do the output
 """
 
-image_x = 1918
-image_y = 1280
+image_x = 383
+image_y = 256
 image_z = 3
 
 # layer parameters
-conv1_shape = [3, 3, 3, 16]
+conv1_shape = [3, 3, 3, 2]
 conv1_stride = [1, 1, 1, 1]
-conv1_pstride = [1, 1, 1, 1]
+conv1_pstride = [1, 2, 2, 1]
 
-conv2_shape = [3, 3, 16, 128]
+conv2_shape = [3, 3, 2, 2]
 conv2_stride = [1, 1, 1, 1]
-conv2_pstride = [1, 1, 1, 1]
+conv2_pstride = [1, 2, 2, 1]
 
-conv3_shape = [3, 3, 128, 256]
+conv3_shape = [3, 3, 2, 2]
 conv3_stride = [1, 1, 1, 1]
-conv3_pstride = [1, 1, 1, 1]
+conv3_pstride = [1, 2, 2, 1]
 
-fc1_shape = [9789440, 4194304]
-
-fc2_shape = [fc1_shape[1], image_x*image_y]
+fc1_shape = [3072, image_x*image_y]
 
 # learning hyperparameters
 learn_rate = 5.e-3
-queue_depth = 100
-batch_size = 10
+queue_depth = 2
+batch_size = 1
 
 ########################################################################################################################
 # functions
@@ -73,7 +73,7 @@ def initialize_fc_weights_bias(shape):
     """
     stdev = math.sqrt(2.0 / float(shape[0]))
     init_weight = tf.Variable(tf.random_normal(shape, mean=0.00, stddev=stdev))
-    init_bias = tf.Variable(tf.constant(0.00, shape=shape[1]))
+    init_bias = tf.Variable(tf.constant(0.00, shape=[shape[1]]))
     return init_weight, init_bias
 
 
@@ -93,7 +93,7 @@ def conv_layer_block(inputs, weights, conv_stride, bias, pool_stride, maxpool=Tr
 def layer_flatten(inputs):
     shape = inputs.get_shape()
     nparams = shape[1:4].num_elements()
-    outputs = tf.reshape(input,[-1,nparams])
+    outputs = tf.reshape(inputs,[-1,nparams])
     return outputs, nparams
 
 
@@ -155,7 +155,6 @@ with tf.name_scope(prefix+'WEIGHTS'):
     cweight2, cbias2 = initialize_conv_weights_bias(conv2_shape)
     cweight3, cbias3 = initialize_conv_weights_bias(conv3_shape)
     fweight1, fbias1 = initialize_fc_weights_bias(fc1_shape)
-    fweight2, fbias2 = initialize_fc_weights_bias(fc2_shape)
 
 
 # layers
@@ -164,12 +163,12 @@ with tf.name_scope(prefix+'CV_LAYERS'):
     cv_block2 = conv_layer_block(cv_block1, cweight2, conv2_stride, cbias2, conv2_pstride)
     cv_block3 = conv_layer_block(cv_block2, cweight3, conv3_stride, cbias3, conv3_pstride)
 
+
 with tf.name_scope(prefix+'FLATTEN'):
     flattened, _ = layer_flatten(cv_block3)
 
-with tf.name_scope(prefix='FC_LAYERS'):
-    fc_block1 = fc_layer_block(flattened, fweight1, fbias1, fc1_keep_prob)
-    network_outputs = fc_layer_block(fc_block1, fweight2, fbias2, fc2_keep_prob, dropout=False, activate=False)
+with tf.name_scope(prefix+'FC_LAYERS'):
+    network_outputs = fc_layer_block(flattened, fweight1, fbias1, fc1_keep_prob, dropout=False, activate=False)
 
 # cost
 batch_cost = tf.nn.softmax_cross_entropy_with_logits(logits=network_outputs, labels=batch_of_outputs)
