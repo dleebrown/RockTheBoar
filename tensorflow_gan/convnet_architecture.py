@@ -165,7 +165,7 @@ with tf.name_scope(prefix+'CV_LAYERS'):
 with tf.name_scope(prefix+'COST'):
     dice_val = dice_coef(batch_of_outputs, network_outputs)
     batch_cost = dice_loss(batch_of_outputs, network_outputs)
-    mean_batch_cost = tf.reduce_mean(batch_cost)
+    mean_batch_cost = tf.reduce_mean(batch_cost, name='cost')
 
 # optimizer - adam
 with tf.name_scope(prefix+'OPTIMIZER'):

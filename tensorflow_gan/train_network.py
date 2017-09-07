@@ -10,6 +10,7 @@ import convnet_architecture as cvarch
 image_dir = '/home/donald/Desktop/PYTHON/Kaggle/carvanaimages/images/'
 masks_dir = '/home/donald/Desktop/PYTHON/Kaggle/carvanaimages/masks/'
 save_model_path = '/home/donald/Desktop/temp/'
+frozen_model_directory = '/some/directory/'
 
 training_iterations = 100
 early_stop_threshold = 500
@@ -21,6 +22,24 @@ scale_factor = 0.5
 num_threads = 4
 
 im_list, all_masks, n_ims = inpipe.get_images_masks(image_dir, masks_dir)
+
+
+def freeze_model(saved_model_dir, freeze_loc):
+    # the op to save - this will save all ops feeding into it
+    output_op = 'cv_COST/cost'
+    frozen_dir = freeze_loc+'frozen.model'
+    saver = tf.train.Saver()
+    graph = tf.get_default_graph()
+    input_graph_def = graph.as_graph_def()
+    session = tf.Session()
+    # restore the trained model
+    saver.restore(session, saved_model_dir+'save.ckpt')
+    # convert all useful variables to constants
+    output_graph_def = tf.graph_util.convert_variables_to_constants(session, input_graph_def, [output_op])
+    # open the specified file and write the model
+    with open(frozen_dir, 'wb') as frozen_model:
+        frozen_model.write(output_graph_def.SerializeToString())
+    print('Model frozen as '+frozen_dir)
 
 
 def add_to_queue(session, queue_operation, coordinator, list_of_images, list_of_masks, total_num_images, queuetype):
@@ -139,7 +158,6 @@ def train_network(total_iterations, keep_prob, learn_rate):
         return str(round(end_time-begin_time, 2))
 
     # control flow for training - load in save location, etc. launch tensorflow session, prepare saver
-    model_dir = save_model_path
     session = tf.Session()
     options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
     run_metadata = tf.RunMetadata()
@@ -155,13 +173,14 @@ def train_network(total_iterations, keep_prob, learn_rate):
     # train the network on input training data
     execute_time = train_loop(total_iterations, keep_prob, learn_rate)
     # save model and the graph and close session OFF FOR NOW
-    # save_path = saver.save(session, model_dir+'save.ckpt')
+    save_path = saver.save(session, model_dir+'save.ckpt')
     session.close()
     print('Training finished in '+execute_time+'s')
                                                # , model and graph saved in '+save_path)
     # freeze the model and save it to disk after training # BROKEN
-    # freeze_model(parameters)
+
 
 train_network(training_iterations, keep_prob=1.0, learn_rate=5e-3)
+freeze_model(save_model_path, frozen_model_directory)
 
 
