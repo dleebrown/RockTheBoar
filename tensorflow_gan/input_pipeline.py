@@ -23,7 +23,7 @@ def image_input(car_image_title, mask_image_title, scale_factor):
     mask_img = Image.open(mask_image_title)
     mask_img = downsample_img(mask_img, scale_factor)
     mask_img = np.array(mask_img, dtype=np.float32)
-    mask_img = normalize_img(mask_img, 255.)
+    # mask_img = normalize_img(mask_img, 255.)
 
     car_img = Image.open(car_image_title)
     car_img = downsample_img(car_img, scale_factor)
@@ -47,12 +47,17 @@ def random_image_reader(list_of_images, total_num_images, scale_factor):
     pixelvals, mask = image_input(car_image_directory + chosen_image, mask_image_directory + mask_name, scale_factor)
     return pixelvals, mask
 
+# fetches the first num_fetch images in the directory
+def nonrandom_image_reader(list_of_images, total_num_images, scale_factor, num_fetch):
+    chosen_images = list_of_images[0:num_fetch]
+    root_names = [chosen_images[i].split('.')[0] for i in range(num_fetch)]
+    mask_names = [root_names[i] + '_mask.gif' for i in range(num_fetch)]
 
 if __name__ == '__main__':
 
     a, _, c = get_images_masks(car_image_directory, mask_image_directory)
 
-    img, mask = random_image_reader(a, int(c))
+    img, mask = random_image_reader(a, int(c), scale_factor=1.0)
     print(np.shape(img))
 
 
