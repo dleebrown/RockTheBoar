@@ -7,10 +7,10 @@ import convnet_architecture as cvarch
 
 """A lot of DNA from ANNA here"""
 
-image_dir = '/home/donald/Desktop/PYTHON/Kaggle/carvanaimages/images/'
-masks_dir = '/home/donald/Desktop/PYTHON/Kaggle/carvanaimages/masks/'
+image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
+masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
 save_model_path = '/home/donald/Desktop/temp/'
-frozen_model_directory = '/some/directory/'
+frozen_model_directory = '/home/donald/Desktop/temp/'
 
 training_iterations = 100
 early_stop_threshold = 500
@@ -173,7 +173,7 @@ def train_network(total_iterations, keep_prob, learn_rate):
     # train the network on input training data
     execute_time = train_loop(total_iterations, keep_prob, learn_rate)
     # save model and the graph and close session OFF FOR NOW
-    save_path = saver.save(session, model_dir+'save.ckpt')
+    save_path = saver.save(session, save_model_path+'save.ckpt')
     session.close()
     print('Training finished in '+execute_time+'s')
                                                # , model and graph saved in '+save_path)

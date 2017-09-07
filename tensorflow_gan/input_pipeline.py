@@ -4,8 +4,8 @@ import os
 import random
 
 
-car_image_directory = '/home/donald/Desktop/PYTHON/Kaggle/carvanaimages/images/'
-mask_image_directory = '/home/donald/Desktop/PYTHON/Kaggle/carvanaimages/masks/'
+car_image_directory = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
+mask_image_directory = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
 
 
 def downsample_img(input_img, scale_factor):
