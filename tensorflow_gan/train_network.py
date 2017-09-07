@@ -5,6 +5,8 @@ import input_pipeline as inpipe
 import threading
 import convnet_architecture as cvarch
 
+"""A lot of DNA from ANNA here"""
+
 image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
 masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
 save_model_path = '/home/donald/Desktop/temp/'
@@ -89,18 +91,15 @@ def train_network(total_iterations, keep_prob):
                 if i == 0:
                     if use_xval:
                         init_cost, init_dice = xval_subloop()
-                        best_cost = init_cost
                         print('Initial xval cost: '+str(round(init_cost, 2)))
-                        session.run(cvarch.optim_function, feed_dict=feed_dict_train)
                     else:
                         init_cost = session.run(cvarch.mean_batch_cost, feed_dict=feed_dict_train)
-                        best_cost = init_cost
                         print('Initial batch cost: '+str(round(init_cost, 2)))
-                        session.run(cvarch.optim_function, feed_dict=feed_dict_train)
+                    best_cost = init_cost
+                    session.run(cvarch.optim_function, feed_dict=feed_dict_train)
                 # if not first iteration but iteration corresponding to sample interval, runs diagnostics
                 elif (i+1) % int(sample_interval) == 0:
-                    test_cost = session.run(cvarch.mean_batch_cost, feed_dict=feed_dict_train)
-                    dice = session.run(cvarch.dice_val, feed_dict=feed_dict_train)
+                    test_cost, dice = session.run([cvarch.mean_batch_cost, cvarch.dice_val], feed_dict=feed_dict_train)
                     session.run(cvarch.optim_function, feed_dict=feed_dict_train)
                     if use_xval:
                         xvcost = xval_subloop()
