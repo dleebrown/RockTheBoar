@@ -31,19 +31,19 @@ image_y = 640
 image_z = 3
 
 # layer parameters - pstride is the pool stride
-conv1_shape = [3, 3, 3, 8]
+conv1_shape = [3, 3, 3, 1]
 conv1_stride = [1, 1, 1, 1]
 conv1_pstride = [1, 1, 1, 1]
 
-conv2_shape = [3, 3, conv1_shape[3], 16]
+conv2_shape = [3, 3, conv1_shape[3], 1]
 conv2_stride = [1, 1, 1, 1]
 conv2_pstride = [1, 1, 1, 1]
 
-conv3_shape = [3, 3, conv2_shape[3], 32]
+conv3_shape = [3, 3, conv2_shape[3], 1]
 conv3_stride = [1, 1, 1, 1]
 conv3_pstride = [1, 1, 1, 1]
 
-conv4_shape = [3, 3, conv3_shape[3], 16]
+conv4_shape = [3, 3, conv3_shape[3], 1]
 conv4_stride = [1, 1, 1, 1]
 conv4_pstride = [1, 1, 1, 1]
 

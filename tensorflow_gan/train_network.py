@@ -7,11 +7,11 @@ import convnet_architecture as cvarch
 
 """A lot of DNA from ANNA here"""
 
-image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
-masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
+image_dir = '/home/donald/Desktop/PYTHON/Kaggle/carvanaimages/images/'
+masks_dir = '/home/donald/Desktop/PYTHON/Kaggle/carvanaimages/masks/'
 save_model_path = '/home/donald/Desktop/temp/'
 
-training_iterations = 20000
+training_iterations = 100
 early_stop_threshold = 500
 sample_interval = 25
 use_xval = False
@@ -40,7 +40,7 @@ def add_to_queue(session, queue_operation, coordinator, list_of_images, list_of_
                 except tf.errors.CancelledError:
                         print('Input queue closed, exiting training')
 
-def train_network(total_iterations, keep_prob):
+def train_network(total_iterations, keep_prob, learn_rate):
     def xval_subloop():
         queuetype = 'xval_q'
         xvcoordinator = tf.train.Coordinator()
@@ -52,7 +52,7 @@ def train_network(total_iterations, keep_prob):
             for i in xval_threads:
                 i.start()
         # for cross-validation only inference is run so fix drop prob to 1.0
-        feed_dict_xval = {cvarch.retain_prob: 1.0, cvarch.select_queue: 1}
+        feed_dict_xval = {cvarch.retain_prob: 1.0, cvarch.select_queue: 1, cvarch.learn_rate: 1.0}
         xval_cost, xval_dice = session.run([cvarch.mean_batch_cost, cvarch.dice_val], feed_dict=feed_dict_xval)
         """
         if parameters['TBOARD_OUTPUT'] == 'YES':
@@ -77,7 +77,7 @@ def train_network(total_iterations, keep_prob):
                                for i in range(num_threads)]
             for i in enqueue_threads:
                 i.start()
-        feed_dict_train = {cvarch.retain_prob: keep_prob, cvarch.select_queue: 0}
+        feed_dict_train = {cvarch.retain_prob: keep_prob, cvarch.select_queue: 0, cvarch.learn_rate: learn_rate}
         # controls early stopping threshold
         early_stop_counter = 0
         # stores best cost in order to control early stopping
@@ -153,7 +153,7 @@ def train_network(total_iterations, keep_prob):
                                              fc2b_sum, fc2a_sum, fc3w_sum, fc3a_sum, batch_cost_sum])
         """
     # train the network on input training data
-    execute_time = train_loop(total_iterations, cvarch.learn_rate, dropout_prob)
+    execute_time = train_loop(total_iterations, keep_prob, learn_rate)
     # save model and the graph and close session OFF FOR NOW
     # save_path = saver.save(session, model_dir+'save.ckpt')
     session.close()
@@ -162,6 +162,6 @@ def train_network(total_iterations, keep_prob):
     # freeze the model and save it to disk after training # BROKEN
     # freeze_model(parameters)
 
-train_network(training_iterations, keep_prob=1.0)
+train_network(training_iterations, keep_prob=1.0, learn_rate=5e-3)
 
 
