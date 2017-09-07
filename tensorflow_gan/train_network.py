@@ -20,6 +20,7 @@ num_threads = 4
 
 im_list, all_masks, n_ims = inpipe.get_images_masks(image_dir, masks_dir)
 
+
 def add_to_queue(session, queue_operation, coordinator, list_of_images, list_of_masks, total_num_images, queuetype):
     img, msk = inpipe.random_image_reader(list_of_images, total_num_images, scale_factor)
     img = np.reshape(img, (1, 959, 640, 3))
@@ -42,14 +43,14 @@ def train_network(total_iterations, keep_prob):
         queuetype = 'xval_q'
         xvcoordinator = tf.train.Coordinator()
         num_xvthread = 1
-        # force preprocessing to run on the cpu
         with tf.device("/cpu:0"):
             xval_threads = [threading.Thread(target=add_to_queue, args=(session, cvarch.queue_op, xvcoordinator,
                                                                         im_list, all_masks, n_ims, queuetype))
                             for i in range(num_xvthread)]
             for i in xval_threads:
                 i.start()
-        feed_dict_xval = {cvarch.fc1_keep_prob: keep_prob, cvarch.fc2_keep_prob: keep_prob, cvarch.select_queue: 1}
+        # for cross-validation only inference is run so fix drop prob to 1.0
+        feed_dict_xval = {cvarch.retain_prob: 1.0, cvarch.select_queue: 1}
         xval_cost, xval_dice = session.run([cvarch.mean_batch_cost, cvarch.dice_val], feed_dict=feed_dict_xval)
         """
         if parameters['TBOARD_OUTPUT'] == 'YES':
@@ -74,7 +75,7 @@ def train_network(total_iterations, keep_prob):
                                for i in range(num_threads)]
             for i in enqueue_threads:
                 i.start()
-        feed_dict_train = {cvarch.fc1_keep_prob: keep_prob, cvarch.fc2_keep_prob: keep_prob, cvarch.select_queue: 0}
+        feed_dict_train = {cvarch.retain_prob: keep_prob, cvarch.select_queue: 0}
         # controls early stopping threshold
         early_stop_counter = 0
         # stores best cost in order to control early stopping
