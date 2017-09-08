@@ -27,8 +27,8 @@ adam optimizer
 need to work on how we want to do the output
 """
 
-image_x = 959
-image_y = 640
+image_x = 1918
+image_y = 1280
 image_z = 3
 
 # layer parameters
@@ -78,7 +78,7 @@ def initialize_fc_weights_bias(shape):
     return init_weight, init_bias
 
 
-def conv_layer_block(inputs, weights, conv_stride, bias, pool_stride, maxpool=True, activation='relu'):
+def conv_layer_block(inputs, weights, conv_stride, bias, pool_stride, keep_prob, maxpool=True, drop=True, activation='relu'):
     """The conv layer pattern is standardized so wrap it in a function
     """
     conv = tf.nn.conv2d(input=inputs, filter=weights, strides=conv_stride, padding='SAME')
@@ -87,10 +87,14 @@ def conv_layer_block(inputs, weights, conv_stride, bias, pool_stride, maxpool=Tr
         activate = tf.nn.relu(conv)
     else:
         activate = tf.nn.sigmoid(conv)
-    if maxpool:
-        outputs = tf.nn.max_pool(value=activate, ksize=[1, 2, 2, 1], strides=pool_stride, padding='SAME')
+    if drop:
+        dropped = tf.nn.dropout(activate, keep_prob)
     else:
-        outputs = activate
+        dropped = activate
+    if maxpool:
+        outputs = tf.nn.max_pool(value=dropped, ksize=[1, 2, 2, 1], strides=pool_stride, padding='SAME')
+    else:
+        outputs = dropped
     return outputs
 
 smooth = 1.0
@@ -156,11 +160,16 @@ with tf.name_scope(prefix+'WEIGHTS'):
 
 # layers
 with tf.name_scope(prefix+'CV_LAYERS'):
-    cv_block1 = conv_layer_block(batch_of_images, cweight1, conv1_stride, cbias1, conv1_pstride, maxpool=False)
-    cv_block2 = conv_layer_block(cv_block1, cweight2, conv2_stride, cbias2, conv2_pstride, maxpool=False)
-    cv_block3 = conv_layer_block(cv_block2, cweight3, conv3_stride, cbias3, conv3_pstride, maxpool=False)
-    cv_block4 = conv_layer_block(cv_block3, cweight4, conv4_stride, cbias4, conv4_pstride, maxpool=False)
-    cv_block5 = conv_layer_block(cv_block4, cweight5, conv5_stride, cbias5, conv5_pstride, maxpool=False, activation='sigmoid')
+    cv_block1 = conv_layer_block(batch_of_images, cweight1, conv1_stride, cbias1, conv1_pstride, dropout, drop=True,
+                                 maxpool=False)
+    cv_block2 = conv_layer_block(cv_block1, cweight2, conv2_stride, cbias2, conv2_pstride, dropout, drop=True,
+                                 maxpool=False)
+    cv_block3 = conv_layer_block(cv_block2, cweight3, conv3_stride, cbias3, conv3_pstride, dropout, drop=True,
+                                 maxpool=False)
+    cv_block4 = conv_layer_block(cv_block3, cweight4, conv4_stride, cbias4, conv4_pstride, dropout, drop=True,
+                                 maxpool=False)
+    cv_block5 = conv_layer_block(cv_block4, cweight5, conv5_stride, cbias5, conv5_pstride, dropout, drop=False,
+                                 maxpool=False, activation='sigmoid')
     network_outputs = tf.identity(cv_block5, name='outputs')
 
 # cost

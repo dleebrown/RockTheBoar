@@ -14,10 +14,10 @@ early_stop_threshold = 500
 sample_interval = 25
 use_xval = False
 tboard_logging = False
-dropout_prob = 1.0
-scale_factor = 0.5
+retain_prob = 0.8
+scale_factor = 1.0
 num_threads = 4
-bsize = 4
+bsize = 1
 
 im_list, all_masks, n_ims = inpipe.get_images_masks(image_dir, masks_dir)
 
@@ -41,8 +41,8 @@ def freeze_model(save_dir):
 
 def add_to_queue(session, queue_operation, coordinator, list_of_images, list_of_masks, total_num_images, queuetype):
     img, msk = inpipe.random_image_reader(list_of_images, total_num_images, scale_factor)
-    img = np.reshape(img, (1, 959, 640, 3))
-    msk = np.reshape(msk, (1, 959, 640, 1))
+    img = np.reshape(img, (1, 1918, 1280, 3))
+    msk = np.reshape(msk, (1, 1918, 1280, 1))
     while not coordinator.should_stop():
             np.random.seed()
             if queuetype == 'train_q':
@@ -173,7 +173,7 @@ def train_network(total_iterations, keep_prob):
                                              fc2b_sum, fc2a_sum, fc3w_sum, fc3a_sum, batch_cost_sum])
         """
     # train the network on input training data
-    execute_time = train_loop(total_iterations, cvarch.learn_rate, dropout_prob)
+    execute_time = train_loop(total_iterations, cvarch.learn_rate, keep_prob)
     # save model and the graph and close session OFF FOR NOW
     save_path = saver.save(session, model_dir+'save.ckpt')
     session.close()
@@ -182,4 +182,4 @@ def train_network(total_iterations, keep_prob):
     # freeze the model and save it to disk after training # BROKEN
     freeze_model(save_model_path)
 
-train_network(training_iterations, keep_prob=1.0)
+train_network(training_iterations, retain_prob)
