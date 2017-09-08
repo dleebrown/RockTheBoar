@@ -2,31 +2,9 @@ import tensorflow as tf
 import math
 import numpy as np
 
-"""This will just be the neural network architecture
-weights are initialized according to He et al. (2015)
-biases are initialized to 0
-architecture is 
-training queue + cross validation queue assuming 3-color RGB images
-3x3x3->16 conv layer (1918x1280x16)
-ReLU
-2x2x1 maxpooling (959x640x16)
-3x3x16->128 (959x640x128)
-ReLU
-2x2x1 maxpooling (480x320x128)
-3x3x128->256 (479x320x256)
-ReLU
-2x2x1 maxpooling (240x160x256)
-flatten (9789440)
-fully-connected layer 9789440 -> 4194304 (2^22)
-dropout
-ReLU
-fully-connected layer 4194304 (2^20) -> 2455040
-TESTING WITH LARGER MAXPOOL
-cross-entropy (softmax) cost
-adam optimizer
-need to work on how we want to do the output
-"""
-
+# biases initialized to 0, weights initialized to He et al. (2015).
+# note that dropout is on by default on all layers but the last
+# these all need to be set
 image_x = 1918
 image_y = 1280
 image_z = 3

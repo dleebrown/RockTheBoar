@@ -4,6 +4,7 @@ from PIL import Image
 import os
 import random
 
+# set these
 car_image_directory = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
 mask_image_directory = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
 
