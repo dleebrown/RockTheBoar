@@ -5,14 +5,11 @@ import input_pipeline as inpipe
 import threading
 import convnet_architecture as cvarch
 
-"""A lot of DNA from ANNA here"""
-
 image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
 masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
 save_model_path = '/home/donald/Desktop/temp/'
-frozen_model_directory = '/home/donald/Desktop/temp/'
 
-training_iterations = 100
+training_iterations = 20000
 early_stop_threshold = 500
 sample_interval = 25
 use_xval = False
@@ -22,25 +19,6 @@ scale_factor = 0.5
 num_threads = 4
 
 im_list, all_masks, n_ims = inpipe.get_images_masks(image_dir, masks_dir)
-
-
-def freeze_model(saved_model_dir, freeze_loc):
-    # the op to save - this will save all ops feeding into it
-    output_op = 'cv_COST/cost'
-    frozen_dir = freeze_loc+'frozen.model'
-    saver = tf.train.Saver()
-    graph = tf.get_default_graph()
-    input_graph_def = graph.as_graph_def()
-    session = tf.Session()
-    # restore the trained model
-    saver.restore(session, saved_model_dir+'save.ckpt')
-    # convert all useful variables to constants
-    output_graph_def = tf.graph_util.convert_variables_to_constants(session, input_graph_def, [output_op])
-    # open the specified file and write the model
-    with open(frozen_dir, 'wb') as frozen_model:
-        frozen_model.write(output_graph_def.SerializeToString())
-    print('Model frozen as '+frozen_dir)
-
 
 def add_to_queue(session, queue_operation, coordinator, list_of_images, list_of_masks, total_num_images, queuetype):
     img, msk = inpipe.random_image_reader(list_of_images, total_num_images, scale_factor)
@@ -59,19 +37,19 @@ def add_to_queue(session, queue_operation, coordinator, list_of_images, list_of_
                 except tf.errors.CancelledError:
                         print('Input queue closed, exiting training')
 
-def train_network(total_iterations, keep_prob, learn_rate):
+def train_network(total_iterations, keep_prob):
     def xval_subloop():
         queuetype = 'xval_q'
         xvcoordinator = tf.train.Coordinator()
         num_xvthread = 1
+        # force preprocessing to run on the cpu
         with tf.device("/cpu:0"):
             xval_threads = [threading.Thread(target=add_to_queue, args=(session, cvarch.queue_op, xvcoordinator,
                                                                         im_list, all_masks, n_ims, queuetype))
                             for i in range(num_xvthread)]
             for i in xval_threads:
                 i.start()
-        # for cross-validation only inference is run so fix drop prob to 1.0
-        feed_dict_xval = {cvarch.retain_prob: 1.0, cvarch.select_queue: 1, cvarch.learn_rate: 1.0}
+        feed_dict_xval = {cvarch.fc1_keep_prob: keep_prob, cvarch.fc2_keep_prob: keep_prob, cvarch.select_queue: 1}
         xval_cost, xval_dice = session.run([cvarch.mean_batch_cost, cvarch.dice_val], feed_dict=feed_dict_xval)
         """
         if parameters['TBOARD_OUTPUT'] == 'YES':
@@ -96,7 +74,7 @@ def train_network(total_iterations, keep_prob, learn_rate):
                                for i in range(num_threads)]
             for i in enqueue_threads:
                 i.start()
-        feed_dict_train = {cvarch.retain_prob: keep_prob, cvarch.select_queue: 0, cvarch.learn_rate: learn_rate}
+        feed_dict_train = {cvarch.fc1_keep_prob: keep_prob, cvarch.fc2_keep_prob: keep_prob, cvarch.select_queue: 0}
         # controls early stopping threshold
         early_stop_counter = 0
         # stores best cost in order to control early stopping
@@ -110,15 +88,18 @@ def train_network(total_iterations, keep_prob, learn_rate):
                 if i == 0:
                     if use_xval:
                         init_cost, init_dice = xval_subloop()
+                        best_cost = init_cost
                         print('Initial xval cost: '+str(round(init_cost, 2)))
+                        session.run(cvarch.optim_function, feed_dict=feed_dict_train)
                     else:
                         init_cost = session.run(cvarch.mean_batch_cost, feed_dict=feed_dict_train)
+                        best_cost = init_cost
                         print('Initial batch cost: '+str(round(init_cost, 2)))
-                    best_cost = init_cost
-                    session.run(cvarch.optim_function, feed_dict=feed_dict_train)
+                        session.run(cvarch.optim_function, feed_dict=feed_dict_train)
                 # if not first iteration but iteration corresponding to sample interval, runs diagnostics
                 elif (i+1) % int(sample_interval) == 0:
-                    test_cost, dice = session.run([cvarch.mean_batch_cost, cvarch.dice_val], feed_dict=feed_dict_train)
+                    test_cost = session.run(cvarch.mean_batch_cost, feed_dict=feed_dict_train)
+                    dice = session.run(cvarch.dice_val, feed_dict=feed_dict_train)
                     session.run(cvarch.optim_function, feed_dict=feed_dict_train)
                     if use_xval:
                         xvcost = xval_subloop()
@@ -158,6 +139,7 @@ def train_network(total_iterations, keep_prob, learn_rate):
         return str(round(end_time-begin_time, 2))
 
     # control flow for training - load in save location, etc. launch tensorflow session, prepare saver
+    model_dir = save_model_path
     session = tf.Session()
     options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
     run_metadata = tf.RunMetadata()
@@ -171,16 +153,13 @@ def train_network(total_iterations, keep_prob, learn_rate):
                                              fc2b_sum, fc2a_sum, fc3w_sum, fc3a_sum, batch_cost_sum])
         """
     # train the network on input training data
-    execute_time = train_loop(total_iterations, keep_prob, learn_rate)
+    execute_time = train_loop(total_iterations, cvarch.learn_rate, dropout_prob)
     # save model and the graph and close session OFF FOR NOW
-    save_path = saver.save(session, save_model_path+'save.ckpt')
+    # save_path = saver.save(session, model_dir+'save.ckpt')
     session.close()
     print('Training finished in '+execute_time+'s')
                                                # , model and graph saved in '+save_path)
     # freeze the model and save it to disk after training # BROKEN
+    # freeze_model(parameters)
 
-
-train_network(training_iterations, keep_prob=1.0, learn_rate=5e-3)
-freeze_model(save_model_path, frozen_model_directory)
-
-
+train_network(training_iterations, keep_prob=1.0)
