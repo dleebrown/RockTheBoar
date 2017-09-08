@@ -9,7 +9,7 @@ image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
 masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
 save_model_path = '/home/donald/Desktop/temp/'
 
-training_iterations = 20000
+training_iterations = 50
 early_stop_threshold = 500
 sample_interval = 25
 use_xval = False
@@ -17,8 +17,27 @@ tboard_logging = False
 dropout_prob = 1.0
 scale_factor = 0.5
 num_threads = 4
+bsize = 4
 
 im_list, all_masks, n_ims = inpipe.get_images_masks(image_dir, masks_dir)
+
+# freezes a tensorflow model to be reloaded later
+def freeze_model(save_dir):
+    # the op to save - this results in all the tboard options being discarded from the frozen graph
+    output_op = 'cv_COST/cost'
+    frozen_dir = save_dir+'frozen.model'
+    saver = tf.train.Saver()
+    graph = tf.get_default_graph()
+    input_graph_def = graph.as_graph_def()
+    session = tf.Session()
+    # restore the trained model
+    saver.restore(session, save_dir+'save.ckpt')
+    # convert all useful variables to constants
+    output_graph_def = tf.graph_util.convert_variables_to_constants(session, input_graph_def, [output_op])
+    # open the specified file and write the model
+    with open(frozen_dir, 'wb') as frozen_model:
+        frozen_model.write(output_graph_def.SerializeToString())
+    print('Model frozen as '+frozen_dir)
 
 def add_to_queue(session, queue_operation, coordinator, list_of_images, list_of_masks, total_num_images, queuetype):
     img, msk = inpipe.random_image_reader(list_of_images, total_num_images, scale_factor)
@@ -38,6 +57,7 @@ def add_to_queue(session, queue_operation, coordinator, list_of_images, list_of_
                         print('Input queue closed, exiting training')
 
 def train_network(total_iterations, keep_prob):
+    # BROKEN
     def xval_subloop():
         queuetype = 'xval_q'
         xvcoordinator = tf.train.Coordinator()
@@ -74,7 +94,7 @@ def train_network(total_iterations, keep_prob):
                                for i in range(num_threads)]
             for i in enqueue_threads:
                 i.start()
-        feed_dict_train = {cvarch.fc1_keep_prob: keep_prob, cvarch.fc2_keep_prob: keep_prob, cvarch.select_queue: 0}
+        feed_dict_train = {cvarch.dropout: keep_prob, cvarch.select_queue: 0, cvarch.batch_size: bsize}
         # controls early stopping threshold
         early_stop_counter = 0
         # stores best cost in order to control early stopping
@@ -155,11 +175,11 @@ def train_network(total_iterations, keep_prob):
     # train the network on input training data
     execute_time = train_loop(total_iterations, cvarch.learn_rate, dropout_prob)
     # save model and the graph and close session OFF FOR NOW
-    # save_path = saver.save(session, model_dir+'save.ckpt')
+    save_path = saver.save(session, model_dir+'save.ckpt')
     session.close()
     print('Training finished in '+execute_time+'s')
                                                # , model and graph saved in '+save_path)
     # freeze the model and save it to disk after training # BROKEN
-    # freeze_model(parameters)
+    freeze_model(save_model_path)
 
 train_network(training_iterations, keep_prob=1.0)

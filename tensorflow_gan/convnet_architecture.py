@@ -55,7 +55,6 @@ conv5_pstride = [1, 1, 1, 1]
 # learning hyperparameters
 learn_rate = 1.e-3
 queue_depth = 25
-batch_size = 5
 
 ########################################################################################################################
 # functions
@@ -112,8 +111,8 @@ def bce_dice_loss(y_true, y_pred):
 
 prefix = 'cv_'
 # placeholder to turn off dropout during inference
-fc1_keep_prob = tf.placeholder(tf.float32, name='dropout1')
-fc2_keep_prob = tf.placeholder(tf.float32, name='dropout2')
+dropout = tf.placeholder(tf.float32, name='dropout')
+batch_size = tf.placeholder(tf.int32, name='batch_size')
 
 
 # input and output placeholders. note that known_bitmasks is already flattened
@@ -135,10 +134,12 @@ with tf.name_scope('XVAL_QUEUE'):
     xval_op = xval_queue.enqueue_many([xval_bitmasks, xval_data])
 
 # master queue that handles switching between the two input queues
-with tf.name_scope('MASTER_QUEUE'):
-    select_queue = tf.placeholder(tf.int32, [])
+with tf.name_scope(prefix+'MASTER_QUEUE'):
+    select_queue = tf.placeholder(tf.int32, [], name='select_queue')
     master_queue = tf.QueueBase.from_list(select_queue, [input_queue, xval_queue])
-    batch_of_outputs, batch_of_images = master_queue.dequeue_many(batch_size)
+    batch_of_outputs, batch_of_ims = master_queue.dequeue_many(batch_size)
+    # identity functions to support naming to be called during inference
+    batch_of_images = tf.identity(batch_of_ims, name='input_ims')
 
 ########################################################################################################################
 # network architecture
@@ -159,7 +160,8 @@ with tf.name_scope(prefix+'CV_LAYERS'):
     cv_block2 = conv_layer_block(cv_block1, cweight2, conv2_stride, cbias2, conv2_pstride, maxpool=False)
     cv_block3 = conv_layer_block(cv_block2, cweight3, conv3_stride, cbias3, conv3_pstride, maxpool=False)
     cv_block4 = conv_layer_block(cv_block3, cweight4, conv4_stride, cbias4, conv4_pstride, maxpool=False)
-    network_outputs = conv_layer_block(cv_block4, cweight5, conv5_stride, cbias5, conv5_pstride, maxpool=False, activation='sigmoid')
+    cv_block5 = conv_layer_block(cv_block4, cweight5, conv5_stride, cbias5, conv5_pstride, maxpool=False, activation='sigmoid')
+    network_outputs = tf.identity(cv_block5, name='outputs')
 
 # cost
 """
@@ -170,7 +172,9 @@ mean_batch_cost = tf.reduce_mean(batch_cost)
 dice_val = dice_coef(batch_of_outputs, network_outputs)
 
 batch_cost = bce_dice_loss(batch_of_outputs, network_outputs)
-mean_batch_cost = tf.reduce_mean(batch_cost)
+
+with tf.name_scope(prefix+'COST'):
+    mean_batch_cost = tf.reduce_mean(batch_cost, name='cost')
 
 # optimizer
 optim_function = tf.train.AdamOptimizer(learning_rate=learn_rate).minimize(mean_batch_cost)
