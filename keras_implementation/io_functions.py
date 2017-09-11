@@ -98,7 +98,6 @@ def saveModel(TrainedModel, TrainingHistory, fileOut):
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
 
-
 def rle_encode(mask_image):
     pixels = mask_image.flatten()
     # We avoid issues with '1' at the start or end (at the corners of 
@@ -150,11 +149,17 @@ def get_image_matrix(image_path):
     return np.asarray(img, dtype=np.uint8)
 
 #-----------------------------------------------------------------------
+
 '''
 def plotMask1(img, mask):
     
     
 	 image_id = train_ids[0]
+
+
+def plotMask(image_id):
+    image_id = train_ids[0]
+
 
     plt.figure(figsize=(20, 20))
     img = get_image_matrix(get_car_image_files(image_id)[0])
@@ -170,6 +175,7 @@ def plotMask1(img, mask):
     plt.subplot(133)
     plt.imshow(img_masked)
     plt.show()
+
     
 
 def plotMask(img, mask):
@@ -185,3 +191,7 @@ def plotMask(img, mask):
 	plt.show() 
 #-----------------------------------------------------------------------
 '''
+
+#-----------------------------------------------------------------------
+
+
