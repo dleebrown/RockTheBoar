@@ -150,13 +150,15 @@ def get_image_matrix(image_path):
     return np.asarray(img, dtype=np.uint8)
 
 #-----------------------------------------------------------------------
-
-def plotMask(img, mask):
-    #image_id = train_ids[0]
+'''
+def plotMask1(img, mask):
+    
+    
+	 image_id = train_ids[0]
 
     plt.figure(figsize=(20, 20))
-    #img = get_image_matrix(get_car_image_files(image_id)[0])
-    #mask = get_image_matrix(get_car_image_files(image_id, True)[0])
+    img = get_image_matrix(get_car_image_files(image_id)[0])
+    mask = get_image_matrix(get_car_image_files(image_id, True)[0])
     img_masked = cv2.bitwise_and(img, img, mask=mask)
 
     print("Image shape: {} | image type: {} | mask shape: {} | mask type: {}".format(img.shape, img.dtype, mask.shape, mask.dtype) )
@@ -168,5 +170,18 @@ def plotMask(img, mask):
     plt.subplot(133)
     plt.imshow(img_masked)
     plt.show()
-#-----------------------------------------------------------------------
+    
 
+def plotMask(img, mask):
+
+	fig, ax = plt.subplots(1,3, figsize(5, 15)
+	
+	ax[0].imshow(img, cmap = 'grap')
+	ax[1].imshow(mask > 0.5, cmap = 'gray')
+
+	ax[2].imshow(img, cmap = 'jet')
+	ax[2].imshow(mask>0.5, cmap = 'gray', alpha = 0.5)
+    
+	plt.show() 
+#-----------------------------------------------------------------------
+'''

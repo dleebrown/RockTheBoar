@@ -55,9 +55,6 @@ io_functions.saveModel(TrainedModel = model, TrainingHistory = history, fileOut 
 print 50*'-'
 # Testing
 
-pd.DataFrame(history.history)[['dice_coef', 'val_dice_coef']].plot()
-plt.show()
-
 idx = 0
 x = X_val[idx]
 
@@ -86,16 +83,48 @@ ax[-1].set_title('y_pred')
 
 
 plt.imshow(y_pred > 0.5, cmap='gray')
-plt.show()
+plt.savefig('plots/out.png')
+#plt.show()
 
 
+# plot loss, acc, dice coeff
+pd.DataFrame(history.history)[['dice_coef', 'val_dice_coef']].plot()
+plt.savefig('plots/dice.png')
 
 pd.DataFrame(history.history)[['loss', 'val_loss']].plot()
+plt.savefig('plots/loss.png')
 
 pd.DataFrame(history.history)[['acc', 'val_acc']].plot()
+plt.savefig('plots/acc.png')
 
-plt.show()
+
+print y_pred.shape
+print y_train.shape
+print x[None].shape
+
+#-----------------------------------------------------------------------
+plt.clf()
+
+def plotMask(img, mask):
+
+	fig, ax = plt.subplots(1,3, figsize = (15, 5))
+	ax = ax.ravel()
+
+	ax[0].imshow((img[...,:3] * X_std[0,...,:3] + X_mean[0,...,:3]) / 255.)
+	
+	#ax[0].imshow(img, cmap = 'gray')
+	
+	ax[1].imshow(mask > 0.5, cmap = 'gray')
+
+	ax[2].imshow((img[...,:3] * X_std[0,...,:3] + X_mean[0,...,:3]) / 255., cmap = 'jet')
+	ax[2].imshow(mask>0.5, cmap = 'gray', alpha = 0.5)
+	
+	plt.savefig('plots/testPredict.png')    
+	#plt.show() 
 
 #-----------------------------------------------------------------------
 
-io_functions.plotMask(y_train[0], y_pred[0])
+plotMask(x, y_pred)
+
+
+
