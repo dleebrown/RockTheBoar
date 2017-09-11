@@ -5,7 +5,8 @@ from skimage.io import imread
 from skimage.transform import downscale_local_mean
 from sklearn.model_selection import train_test_split
 from keras.models import load_model
-
+import matplotlib.pylab as plt
+import cv2
 #-----------------------------------------------------------------------
 
 def load_data(input_folder, num_train):
@@ -150,12 +151,12 @@ def get_image_matrix(image_path):
 
 #-----------------------------------------------------------------------
 
-def plotMask(image_id):
-    image_id = train_ids[0]
+def plotMask(img, mask):
+    #image_id = train_ids[0]
 
     plt.figure(figsize=(20, 20))
-    img = get_image_matrix(get_car_image_files(image_id)[0])
-    mask = get_image_matrix(get_car_image_files(image_id, True)[0])
+    #img = get_image_matrix(get_car_image_files(image_id)[0])
+    #mask = get_image_matrix(get_car_image_files(image_id, True)[0])
     img_masked = cv2.bitwise_and(img, img, mask=mask)
 
     print("Image shape: {} | image type: {} | mask shape: {} | mask type: {}".format(img.shape, img.dtype, mask.shape, mask.dtype) )

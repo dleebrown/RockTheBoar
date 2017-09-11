@@ -10,10 +10,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 #-----------------------------------------------------------------------
 # Hyper-parameters
-num_train = 16  # while protoyping, otherwise: len(ids_train)
+num_train = 10  # while protoyping, otherwise: len(ids_train)
 learning_rate = 1e-3
-num_epochs = 5
-batch_size = 5
+num_epochs = 2
+batch_size = 2
 #-----------------------------------------------------------------------
 # load model architecture
 model = simple_model.model()
@@ -40,7 +40,7 @@ model.compile(Adam(lr=learning_rate), bce_dice_loss, metrics=['accuracy', dice_c
 X_train, y_train, X_val, y_val = io_functions.load_data(input_folder = '../../input/', num_train = num_train)
 
 #Training
-history = model.fit(X_train, y_train, epochs=num_epochs, validation_data=(X_val, y_val), batch_size=batch_size, verbose=2)
+history = model.fit(X_train, y_train, epochs=num_epochs, validation_data=(X_val, y_val), batch_size=batch_size)
 
 # Save the trained model and training history in hdf5 and npy respectively
 io_functions.saveModel(TrainedModel = model, TrainingHistory = history, fileOut = 'trainedModel')
@@ -52,6 +52,7 @@ io_functions.saveModel(TrainedModel = model, TrainingHistory = history, fileOut 
 
 
 #-----------------------------------------------------------------------
+print 50*'-'
 # Testing
 
 pd.DataFrame(history.history)[['dice_coef', 'val_dice_coef']].plot()
@@ -94,3 +95,7 @@ pd.DataFrame(history.history)[['loss', 'val_loss']].plot()
 pd.DataFrame(history.history)[['acc', 'val_acc']].plot()
 
 plt.show()
+
+#-----------------------------------------------------------------------
+
+io_functions.plotMask(y_train[0], y_pred[0])
