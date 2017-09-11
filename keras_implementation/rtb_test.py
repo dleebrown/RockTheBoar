@@ -21,11 +21,12 @@ def bce_dice_loss(y_true, y_pred):
 
 history = load_model('trainedModel.hdf5')
 
+print 50*'-'
 history.summary()
 
 
 
-raw_input()
+###raw_input()
 pd.DataFrame(history.history)[['dice_coef', 'val_dice_coef']].plot()
 plt.show()
 

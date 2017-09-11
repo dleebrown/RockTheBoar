@@ -10,10 +10,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 #-----------------------------------------------------------------------
 # Hyper-parameters
-num_train = 16  # while protoyping, otherwise: len(ids_train)
+num_train = 10  # while protoyping, otherwise: len(ids_train)
 learning_rate = 1e-3
-num_epochs = 5
-batch_size = 5
+num_epochs = 2
+batch_size = 2
 #-----------------------------------------------------------------------
 # load model architecture
 model = simple_model.model()
@@ -40,7 +40,7 @@ model.compile(Adam(lr=learning_rate), bce_dice_loss, metrics=['accuracy', dice_c
 X_train, y_train, X_val, y_val = io_functions.load_data(input_folder = '../../input/', num_train = num_train)
 
 #Training
-history = model.fit(X_train, y_train, epochs=num_epochs, validation_data=(X_val, y_val), batch_size=batch_size, verbose=2)
+history = model.fit(X_train, y_train, epochs=num_epochs, validation_data=(X_val, y_val), batch_size=batch_size)
 
 # Save the trained model and training history in hdf5 and npy respectively
 io_functions.saveModel(TrainedModel = model, TrainingHistory = history, fileOut = 'trainedModel')
@@ -52,10 +52,8 @@ io_functions.saveModel(TrainedModel = model, TrainingHistory = history, fileOut 
 
 
 #-----------------------------------------------------------------------
+print 50*'-'
 # Testing
-
-pd.DataFrame(history.history)[['dice_coef', 'val_dice_coef']].plot()
-plt.show()
 
 idx = 0
 x = X_val[idx]
@@ -85,12 +83,48 @@ ax[-1].set_title('y_pred')
 
 
 plt.imshow(y_pred > 0.5, cmap='gray')
-plt.show()
+plt.savefig('plots/out.png')
+#plt.show()
 
 
+# plot loss, acc, dice coeff
+pd.DataFrame(history.history)[['dice_coef', 'val_dice_coef']].plot()
+plt.savefig('plots/dice.png')
 
 pd.DataFrame(history.history)[['loss', 'val_loss']].plot()
+plt.savefig('plots/loss.png')
 
 pd.DataFrame(history.history)[['acc', 'val_acc']].plot()
+plt.savefig('plots/acc.png')
 
-plt.show()
+
+print y_pred.shape
+print y_train.shape
+print x[None].shape
+
+#-----------------------------------------------------------------------
+plt.clf()
+
+def plotMask(img, mask):
+
+	fig, ax = plt.subplots(1,3, figsize = (15, 5))
+	ax = ax.ravel()
+
+	ax[0].imshow((img[...,:3] * X_std[0,...,:3] + X_mean[0,...,:3]) / 255.)
+	
+	#ax[0].imshow(img, cmap = 'gray')
+	
+	ax[1].imshow(mask > 0.5, cmap = 'gray')
+
+	ax[2].imshow((img[...,:3] * X_std[0,...,:3] + X_mean[0,...,:3]) / 255., cmap = 'jet')
+	ax[2].imshow(mask>0.5, cmap = 'gray', alpha = 0.5)
+	
+	plt.savefig('plots/testPredict.png')    
+	#plt.show() 
+
+#-----------------------------------------------------------------------
+
+plotMask(x, y_pred)
+
+
+

@@ -5,24 +5,55 @@ import input_pipeline as inpipe
 import threading
 import convnet_architecture as cvarch
 
+# directory with images and masks
 image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
 masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
+# path to save the tensorflow and frozen models
 save_model_path = '/home/donald/Desktop/temp/'
 
-training_iterations = 20
-early_stop_threshold = 20
-sample_interval = 1
+# number of training iterations
+training_iterations = 50
+# number of iterations before printing diagnostics like cost
+sample_interval = 25
+# control early stopping. this number is the max number of sample_intervals to go by with no improvement in cost
+early_stop_threshold = 500
+# leave as false these are broken for now
 use_xval = False
 tboard_logging = False
-dropout_prob = 0.8
-scale_factor = 0.2
+# controls dropout - probability to retain a neuron
+retain_prob = 0.8
+# image scale factor - if using other than 1918x1280 adjust this. e.g. 959x640 -> scale factor = 0.5
+scale_factor = 1.0
+# number of threads to fetch training examples with - set to number of threads on cpu
+num_threads = 4
+# batch size - i can run with 2 on my 1060 for full size images. ultimately 1 is fine as long as you go enough iterations and turn down the
+# learning rate to prevent big fluctuations between examples (true stochastic grad desc)
+bsize = 1
 
 im_list, all_masks, n_ims = inpipe.get_images_masks(image_dir, masks_dir)
 
+# freezes a tensorflow model to be reloaded later
+def freeze_model(save_dir):
+    # the op to save - this results in all the tboard options being discarded from the frozen graph
+    output_op = 'cv_COST/cost'
+    frozen_dir = save_dir+'frozen.model'
+    saver = tf.train.Saver()
+    graph = tf.get_default_graph()
+    input_graph_def = graph.as_graph_def()
+    session = tf.Session()
+    # restore the trained model
+    saver.restore(session, save_dir+'save.ckpt')
+    # convert all useful variables to constants
+    output_graph_def = tf.graph_util.convert_variables_to_constants(session, input_graph_def, [output_op])
+    # open the specified file and write the model
+    with open(frozen_dir, 'wb') as frozen_model:
+        frozen_model.write(output_graph_def.SerializeToString())
+    print('Model frozen as '+frozen_dir)
+
 def add_to_queue(session, queue_operation, coordinator, list_of_images, list_of_masks, total_num_images, queuetype):
     img, msk = inpipe.random_image_reader(list_of_images, total_num_images, scale_factor)
-    img = np.reshape(img, (1, 383, 256, 3))
-    msk = np.reshape(msk, (1, 98048))
+    img = np.reshape(img, (1, 1918, 1280, 3))
+    msk = np.reshape(msk, (1, 1918, 1280, 1))
     while not coordinator.should_stop():
             np.random.seed()
             if queuetype == 'train_q':
@@ -36,38 +67,33 @@ def add_to_queue(session, queue_operation, coordinator, list_of_images, list_of_
                 except tf.errors.CancelledError:
                         print('Input queue closed, exiting training')
 
-def train_network(total_iterations):
-    # BROKEN - subloop definition to build a separate queue for xval data
-    def xval_subloop(learn_rate, step):
+def train_network(total_iterations, keep_prob):
+    # BROKEN
+    def xval_subloop():
         queuetype = 'xval_q'
         xvcoordinator = tf.train.Coordinator()
-        randomize = False
-        # if xval preprocessing desired, flip the correct flat in add_to_queue
-        if parameters['PREPROCESS_XVAL'] == 'YES':
-            xval_training = True
-        else:
-            xval_training = False
-        num_xvthread = int(parameters['XV_THREADS'])
+        num_xvthread = 1
         # force preprocessing to run on the cpu
         with tf.device("/cpu:0"):
-            xval_threads = [threading.Thread(target=add_to_queue, args=(session, xval_op, xvcoordinator, xv_norm_out,
-                                                                        xv_px_val, sn_range, interp_sn, y_off_range,
-                                                                        xv_size, randomize, xval_training,
-                                                                        queuetype)) for i in range(num_xvthread)]
+            xval_threads = [threading.Thread(target=add_to_queue, args=(session, cvarch.queue_op, xvcoordinator,
+                                                                        im_list, all_masks, n_ims, queuetype))
+                            for i in range(num_xvthread)]
             for i in xval_threads:
                 i.start()
-        feed_dict_xval = {learning_rate: learn_rate, dropout: 1.0, batch_size: cvarch.bsize, select_queue: 1}
-        xval_cost, xval_sum = session.run([cost, xval_cost_sum], feed_dict=feed_dict_xval)
+        feed_dict_xval = {cvarch.fc1_keep_prob: keep_prob, cvarch.fc2_keep_prob: keep_prob, cvarch.select_queue: 1}
+        xval_cost, xval_dice = session.run([cvarch.mean_batch_cost, cvarch.dice_val], feed_dict=feed_dict_xval)
+        """
         if parameters['TBOARD_OUTPUT'] == 'YES':
             writer.add_summary(xval_sum, step + inherit_iter_count)
+        """
         # close the queue and join threads
         xvcoordinator.request_stop()
         xvcoordinator.join(xval_threads)
-        # return cost
-        return round(xval_cost, 2)
+        # return cost, dice
+        return round(xval_cost, 2), round(xval_dice, 4)
 
     # definition of the training loop
-    def train_loop(iterations, learn_rate, keep_prob, bsize):
+    def train_loop(iterations, learn_rate, keep_prob):
         begin_time = time.time()
         coordinator = tf.train.Coordinator()
         # force preprocessing to run on the cpu
@@ -79,7 +105,7 @@ def train_network(total_iterations):
                                for i in range(num_threads)]
             for i in enqueue_threads:
                 i.start()
-        feed_dict_train = {cvarch.fc1_keep_prob: keep_prob, cvarch.fc2_keep_prob: keep_prob, cvarch.select_queue: 0}
+        feed_dict_train = {cvarch.dropout: keep_prob, cvarch.select_queue: 0, cvarch.batch_size: bsize}
         # controls early stopping threshold
         early_stop_counter = 0
         # stores best cost in order to control early stopping
@@ -92,7 +118,7 @@ def train_network(total_iterations):
                 # first iteration will store the cost under best_cost for xval if xval specified, current batch if not
                 if i == 0:
                     if use_xval:
-                        init_cost = xval_subloop(learn_rate, i)
+                        init_cost, init_dice = xval_subloop()
                         best_cost = init_cost
                         print('Initial xval cost: '+str(round(init_cost, 2)))
                         session.run(cvarch.optim_function, feed_dict=feed_dict_train)
@@ -104,16 +130,16 @@ def train_network(total_iterations):
                 # if not first iteration but iteration corresponding to sample interval, runs diagnostics
                 elif (i+1) % int(sample_interval) == 0:
                     test_cost = session.run(cvarch.mean_batch_cost, feed_dict=feed_dict_train)
+                    dice = session.run(cvarch.dice_val, feed_dict=feed_dict_train)
                     session.run(cvarch.optim_function, feed_dict=feed_dict_train)
-                    if use_xval: # BROKEN
-                        xvcost = xval_subloop(learn_rate, i)
-                        print('done with batch '+str(int(i+1))+'/'+str(iterations)+', current cost: '
-                          + str(round(test_cost, 2))+', xval cost: '+str(xvcost))
+                    if use_xval:
+                        xvcost = xval_subloop()
+                        print('done with batch '+str(int(i+1))+'/'+str(iterations)+', xval cost: '+str(xvcost))
                     else:
                         # if xval set not specified, will just calculate cost for current batch and print
                         xvcost = test_cost
                         print('done with batch ' + str(int(i + 1)) + '/' + str(iterations) + ', current cost: '
-                          + str(round(test_cost, 2)))
+                          + str(round(test_cost, 2)) + ', dice: ' + str(round(dice, 4)))
                     # if early stopping desired, will compare xval or current batch cost to the best cost
                     if float(xvcost) >= best_cost:
                         early_stop_counter += 1
@@ -158,15 +184,13 @@ def train_network(total_iterations):
                                              fc2b_sum, fc2a_sum, fc3w_sum, fc3a_sum, batch_cost_sum])
         """
     # train the network on input training data
-    execute_time = train_loop(total_iterations, cvarch.learn_rate, dropout_prob, cvarch.batch_size)
+    execute_time = train_loop(total_iterations, cvarch.learn_rate, keep_prob)
     # save model and the graph and close session OFF FOR NOW
-    # save_path = saver.save(session, model_dir+'save.ckpt')
+    save_path = saver.save(session, model_dir+'save.ckpt')
     session.close()
     print('Training finished in '+execute_time+'s')
                                                # , model and graph saved in '+save_path)
     # freeze the model and save it to disk after training # BROKEN
-    # freeze_model(parameters)
+    freeze_model(save_model_path)
 
-train_network(100)
-
-
+train_network(training_iterations, retain_prob)

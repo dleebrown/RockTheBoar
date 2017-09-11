@@ -5,7 +5,8 @@ from skimage.io import imread
 from skimage.transform import downscale_local_mean
 from sklearn.model_selection import train_test_split
 from keras.models import load_model
-
+import matplotlib.pylab as plt
+import cv2
 #-----------------------------------------------------------------------
 
 def load_data(input_folder, num_train):
@@ -93,12 +94,9 @@ def saveModel(TrainedModel, TrainingHistory, fileOut):
     print('final acc - train and val')
     print(train_acc[-1], val_acc[-1])
 
+
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
-
-
-
-
 
 def rle_encode(mask_image):
     pixels = mask_image.flatten()
@@ -152,8 +150,16 @@ def get_image_matrix(image_path):
 
 #-----------------------------------------------------------------------
 
+'''
+def plotMask1(img, mask):
+    
+    
+	 image_id = train_ids[0]
+
+
 def plotMask(image_id):
     image_id = train_ids[0]
+
 
     plt.figure(figsize=(20, 20))
     img = get_image_matrix(get_car_image_files(image_id)[0])
@@ -169,5 +175,23 @@ def plotMask(image_id):
     plt.subplot(133)
     plt.imshow(img_masked)
     plt.show()
+
+    
+
+def plotMask(img, mask):
+
+	fig, ax = plt.subplots(1,3, figsize(5, 15)
+	
+	ax[0].imshow(img, cmap = 'grap')
+	ax[1].imshow(mask > 0.5, cmap = 'gray')
+
+	ax[2].imshow(img, cmap = 'jet')
+	ax[2].imshow(mask>0.5, cmap = 'gray', alpha = 0.5)
+    
+	plt.show() 
 #-----------------------------------------------------------------------
+'''
+
+#-----------------------------------------------------------------------
+
 
