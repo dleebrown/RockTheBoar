@@ -38,6 +38,28 @@ def infer_example(input_image, open_session, outputs, input_images, queue_select
     return outputs
 
 
+#-----------------------------------------------------------------------
+#Encoding
+
+def rle_encode(mask_image):
+    pixels = mask_image.flatten()
+    # We avoid issues with '1' at the start or end (at the corners of 
+    # the original image) by setting those pixels to '0' explicitly.
+    pixels[0] = 0
+    pixels[-1] = 0
+    runs = np.where(pixels[1:] != pixels[:-1])[0] + 2
+    runs[1::2] = runs[1::2] - runs[:-1:2]
+    return runs
+
+def rle_to_string(runs):
+    return ' '.join(str(x) for x in runs)
+
+#-----------------------------------------------------------------------
+
+
+
+
+
 if __name__ == '__main__':
     # EXAMPLE OF HOW TO RUN INFERENCE
     # these are just for benching/reading in an image
@@ -45,11 +67,15 @@ if __name__ == '__main__':
     import input_pipeline as inpipe
 
     # just used for reading in an example image
-    image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
-    masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
+    #image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
+    #masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
+
+    image_dir = '/home/nes/Desktop/Caravana/input/train/'
+    masks_dir = '/home/nes/Desktop/Caravana/input/train_masks/'
 
     # set the path and name of the frozen model to load
-    froze_mod = '/home/donald/Desktop/temp/frozen.model'
+    #froze_mod = '/home/donald/Desktop/temp/frozen.model'
+    froze_mod = '/home/nes/Desktop/Caravana/frozen_models/5k-iter/frozen.model'
 
     # first thing to do is to run the initialize function to set up a session and retrieve graph variables
     # this is done outside of the inference loop so graph only loaded once
@@ -69,6 +95,14 @@ if __name__ == '__main__':
         print(np.shape(inferred))
         # now could call a function that adds the mask and image name to the output file to submit to kaggle
         # some_function()
+
+        #------------------ encoding ----------------
+        inferred_10 = np.around(inferred)
+        rle = rle_encode(inferred_10)
+        rle_string = rle_to_string(rle)
+        print rle_string
+        #----------------------------------
+
     # after the loop finishes you must close the tensorflow session to properly free hardware resources
     session.close()
 
