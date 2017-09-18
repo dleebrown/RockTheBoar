@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -48,7 +49,10 @@ def random_image_reader(list_of_images, total_num_images, scale_factor):
     root_name = chosen_image.split('.')[0]
     mask_name = root_name + '_mask.gif'
     pixelvals, mask = image_input(car_image_directory + chosen_image, mask_image_directory + mask_name, scale_factor)
+    print(root_name+'.jpg, ', end='') # added to match submission format'
+    #print(root_name+'.jpg, ',end="",flush=True) # added to match submission format'
     return pixelvals, mask
+
 
 # fetches the first num_fetch images in the directory
 def nonrandom_image_reader(list_of_images, total_num_images, scale_factor, num_fetch):

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import tensorflow as tf
 import numpy as np
 
@@ -84,7 +85,7 @@ if __name__ == '__main__':
     init_split_time = time.time()
     # now within a loop the steps are read in an image (random training example used here)
     # then run infer_example using that image and the variables/session retrieved by initialization
-    for i in range(20):
+    for i in range(2):
         # read in an image. for real inference these would be the test images read in one at a time within a loop
         im_list, all_masks, n_ims = inpipe.get_images_masks(image_dir, masks_dir)
         img, mask = inpipe.random_image_reader(im_list, n_ims, scale_factor=1.0)
@@ -92,7 +93,7 @@ if __name__ == '__main__':
         # is assumed to be 1918x1280x3 numpy array with values normalized to range [0.0, 1.0]
         inferred = infer_example(img, session, outputs, input_images, queue_select, bsize, dropout)
         # note that inferred returns a 1918x1280 mask (float values, so will need to apply rounding to 0, 1)
-        print(np.shape(inferred))
+        #print(np.shape(inferred))
         # now could call a function that adds the mask and image name to the output file to submit to kaggle
         # some_function()
 
@@ -100,7 +101,7 @@ if __name__ == '__main__':
         inferred_10 = np.around(inferred)
         rle = rle_encode(inferred_10)
         rle_string = rle_to_string(rle)
-        print rle_string
+        print(rle_string)
         #----------------------------------
 
     # after the loop finishes you must close the tensorflow session to properly free hardware resources
