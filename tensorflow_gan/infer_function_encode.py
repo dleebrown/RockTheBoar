@@ -3,7 +3,7 @@ import tensorflow as tf
 import numpy as np
 
 # EXAMPLE FOR USE AT THE BOTTOM OF THIS FILE
-
+#Execute: python infer_function_encode.py 2>&1 | tee submission1.txt
 
 def load_frozen_model_remap_queue(frozen_model, input_image):
     # loads a frozen tensorflow model, remaps the input queue to input_image (queues overkill when inferring)
