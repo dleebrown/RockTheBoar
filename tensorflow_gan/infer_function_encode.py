@@ -69,16 +69,16 @@ if __name__ == '__main__':
     import input_pipeline as inpipe
 
     # just used for reading in an example image
-    image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
-    masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
+    image_dir = '/home/sinandeger/kaggle_Competitions/Carvana_Image _Masking_Challenge/train/'
+    masks_dir = '/home/sinandeger/kaggle_Competitions/Carvana_Image _Masking_Challenge/train_masks/'
 
-    saved_csv = '/home/donald/Desktop/PYTHON/kaggle_car_competition/test_output.csv'
+    saved_csv = '/home/sinandeger/Desktop/Carvana-output/test_output.csv'
 
     # image_dir = '/home/nes/Desktop/Caravana/input/train/'
     # masks_dir = '/home/nes/Desktop/Caravana/input/train_masks/'
 
     # set the path and name of the frozen model to load
-    froze_mod = '/home/donald/Desktop/temp/frozen.model'
+    froze_mod = '/home/sinandeger/Desktop/temp/frozen.model'
     # froze_mod = '/home/nes/Desktop/Caravana/frozen_models/5k-iter/frozen.model'
 
     # first thing to do is to run the initialize function to set up a session and retrieve graph variables
@@ -96,8 +96,8 @@ if __name__ == '__main__':
     # USE THIS FOR STATEMENT TO RUN ON ALL IMAGES
     # for i in range(len(im_list)):
     # this for statement will just run on 0-999
-    for i in range(len(im_list[0:1000])):
-        img, mask, im_name = inpipe.not_random_image_reader(im_list, n_ims, 1.0, counter)
+    for i in range(len(im_list[0:100])):
+        img, im_name = inpipe.not_random_image_reader(im_list, n_ims, 1.0, counter)
         # now feed the read-in image to infer_example along with initialized vars/session. Note that the read-in image
         # is assumed to be 1918x1280x3 numpy array with values normalized to range [0.0, 1.0]
         inferred = infer_example(img, session, outputs, input_images, queue_select, bsize, dropout)
