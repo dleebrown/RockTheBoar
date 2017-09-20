@@ -1,6 +1,7 @@
 from __future__ import print_function
 import tensorflow as tf
 import numpy as np
+import os
 
 # EXAMPLE FOR USE AT THE BOTTOM OF THIS FILE
 #Execute: python infer_function_encode.py 2>&1 | tee submission1.txt
@@ -68,15 +69,17 @@ if __name__ == '__main__':
     import input_pipeline as inpipe
 
     # just used for reading in an example image
-    #image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
-    #masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
+    image_dir = '/home/sinandeger/kaggle_Competitions/Carvana_Image _Masking_Challenge/train/'
+    masks_dir = '/home/sinandeger/kaggle_Competitions/Carvana_Image _Masking_Challenge/train_masks/'
 
-    image_dir = '/home/nes/Desktop/Caravana/input/train/'
-    masks_dir = '/home/nes/Desktop/Caravana/input/train_masks/'
+    saved_csv = '/home/sinandeger/Desktop/Carvana-output/test_output.csv'
+
+    # image_dir = '/home/nes/Desktop/Caravana/input/train/'
+    # masks_dir = '/home/nes/Desktop/Caravana/input/train_masks/'
 
     # set the path and name of the frozen model to load
-    #froze_mod = '/home/donald/Desktop/temp/frozen.model'
-    froze_mod = '/home/nes/Desktop/Caravana/frozen_models/5k-iter/frozen.model'
+    froze_mod = '/home/sinandeger/Desktop/temp/frozen.model'
+    # froze_mod = '/home/nes/Desktop/Caravana/frozen_models/5k-iter/frozen.model'
 
     # first thing to do is to run the initialize function to set up a session and retrieve graph variables
     # this is done outside of the inference loop so graph only loaded once
@@ -85,10 +88,16 @@ if __name__ == '__main__':
     init_split_time = time.time()
     # now within a loop the steps are read in an image (random training example used here)
     # then run infer_example using that image and the variables/session retrieved by initialization
-    for i in range(2):
-        # read in an image. for real inference these would be the test images read in one at a time within a loop
-        im_list, all_masks, n_ims = inpipe.get_images_masks(image_dir, masks_dir)
-        img, mask = inpipe.random_image_reader(im_list, n_ims, scale_factor=1.0)
+    output_file = open(saved_csv, mode='w')
+    output_file.write('img,rle_mask\n')
+    # read in an image. for real inference these would be the test images read in one at a time within a loop
+    im_list, all_masks, n_ims = inpipe.get_images_masks(image_dir, masks_dir)
+    counter = 0
+    # USE THIS FOR STATEMENT TO RUN ON ALL IMAGES
+    # for i in range(len(im_list)):
+    # this for statement will just run on 0-999
+    for i in range(len(im_list[0:100])):
+        img, im_name = inpipe.not_random_image_reader(im_list, n_ims, 1.0, counter)
         # now feed the read-in image to infer_example along with initialized vars/session. Note that the read-in image
         # is assumed to be 1918x1280x3 numpy array with values normalized to range [0.0, 1.0]
         inferred = infer_example(img, session, outputs, input_images, queue_select, bsize, dropout)
@@ -96,15 +105,18 @@ if __name__ == '__main__':
         #print(np.shape(inferred))
         # now could call a function that adds the mask and image name to the output file to submit to kaggle
         # some_function()
-
         #------------------ encoding ----------------
         inferred_10 = np.around(inferred)
         rle = rle_encode(inferred_10)
         rle_string = rle_to_string(rle)
-        print(rle_string)
         #----------------------------------
 
+        # write result to file
+        output_file.write(im_name+','+rle_string+'\n')
+        counter += 1
+
     # after the loop finishes you must close the tensorflow session to properly free hardware resources
+    output_file.close()
     session.close()
 
     print('inference time: '+str(round(time.time()-init_split_time, 2)))
