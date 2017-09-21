@@ -5,8 +5,8 @@ import numpy as np
 # biases initialized to 0, weights initialized to He et al. (2015).
 # note that dropout is on by default on all layers but the last
 # these all need to be set
-image_x = 1918
-image_y = 1280
+image_y = 1918
+image_x = 1280
 image_z = 3
 
 # layer parameters
@@ -89,7 +89,6 @@ def bce_dice_loss(y_true, y_pred):
 
 ########################################################################################################################
 # input queue
-
 
 prefix = 'cv_'
 # placeholder to turn off dropout during inference
