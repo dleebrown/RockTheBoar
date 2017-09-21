@@ -4,15 +4,16 @@ import time
 import input_pipeline as inpipe
 import threading
 import convnet_architecture as cvarch
+import matplotlib.pyplot as plt
 
 # directory with images and masks
-image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
-masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
+image_dir = '/home/sinandeger/kaggle_Competitions/Carvana_Image _Masking_Challenge/train/'
+masks_dir = '/home/sinandeger/kaggle_Competitions/Carvana_Image _Masking_Challenge/train_masks/'
 # path to save the tensorflow and frozen models
-save_model_path = '/home/donald/Desktop/temp/'
+save_model_path = '/home/sinandeger/Desktop/temp/'
 
 # number of training iterations
-training_iterations = 50
+training_iterations = 75000
 # number of iterations before printing diagnostics like cost
 sample_interval = 25
 # control early stopping. this number is the max number of sample_intervals to go by with no improvement in cost
@@ -52,8 +53,8 @@ def freeze_model(save_dir):
 
 def add_to_queue(session, queue_operation, coordinator, list_of_images, list_of_masks, total_num_images, queuetype):
     img, msk = inpipe.random_image_reader(list_of_images, total_num_images, scale_factor)
-    img = np.reshape(img, (1, 1918, 1280, 3))
-    msk = np.reshape(msk, (1, 1918, 1280, 1))
+    img = np.reshape(img, (1, 1280, 1918, 3), order='F')
+    msk = np.reshape(msk, (1, 1280, 1918, 1), order='F')
     while not coordinator.should_stop():
             np.random.seed()
             if queuetype == 'train_q':
@@ -123,6 +124,8 @@ def train_network(total_iterations, keep_prob):
                         print('Initial xval cost: '+str(round(init_cost, 2)))
                         session.run(cvarch.optim_function, feed_dict=feed_dict_train)
                     else:
+                        #first_image = session.run(cvarch.image_data, feed_dict=feed_dict_train)
+                        #print(np.shape(first_image))
                         init_cost = session.run(cvarch.mean_batch_cost, feed_dict=feed_dict_train)
                         best_cost = init_cost
                         print('Initial batch cost: '+str(round(init_cost, 2)))
