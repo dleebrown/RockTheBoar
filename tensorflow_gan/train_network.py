@@ -3,26 +3,26 @@ import tensorflow as tf
 import time
 import input_pipeline as inpipe
 import threading
-import convnet_architecture as cvarch
+import convnet_architecture_8l as cvarch
 import matplotlib.pyplot as plt
 
 # directory with images and masks
-image_dir = '/home/sinandeger/kaggle_Competitions/Carvana_Image _Masking_Challenge/train/'
-masks_dir = '/home/sinandeger/kaggle_Competitions/Carvana_Image _Masking_Challenge/train_masks/'
+image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
+masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
 # path to save the tensorflow and frozen models
-save_model_path = '/home/sinandeger/Desktop/temp/'
+save_model_path = '/home/donald/Desktop/PYTHON/kaggle_car_competition/model_8l_deconv/'
 
 # number of training iterations
-training_iterations = 75000
+training_iterations = 22500
 # number of iterations before printing diagnostics like cost
 sample_interval = 25
 # control early stopping. this number is the max number of sample_intervals to go by with no improvement in cost
-early_stop_threshold = 500
+early_stop_threshold = 1000
 # leave as false these are broken for now
 use_xval = False
 tboard_logging = False
 # controls dropout - probability to retain a neuron
-retain_prob = 0.8
+retain_prob = 0.80
 # image scale factor - if using other than 1918x1280 adjust this. e.g. 959x640 -> scale factor = 0.5
 scale_factor = 1.0
 # number of threads to fetch training examples with - set to number of threads on cpu

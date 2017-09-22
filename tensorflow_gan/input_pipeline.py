@@ -6,8 +6,8 @@ import os
 import random
 
 # set these
-car_image_directory = '/home/sinandeger/kaggle_Competitions/Carvana_Image _Masking_Challenge/train/'
-mask_image_directory = '/home/sinandeger/kaggle_Competitions/Carvana_Image _Masking_Challenge/train_masks/'
+car_image_directory = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
+mask_image_directory = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
 
 #car_image_directory = '/home/nes/Desktop/Caravana/input/train/'
 #mask_image_directory = '/home/nes/Desktop/Caravana/input/train_masks/'
