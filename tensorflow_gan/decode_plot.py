@@ -2,10 +2,6 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 from skimage.io import imread
-#from skimage.io import imshow
-
-
-
 
 #---------------------------------------------------------------------
 #Decoding
@@ -34,9 +30,6 @@ def plotMask(img, mask, imtitle):
 	ax = ax.ravel()
 
 	ax[0].imshow(img)
-	
-	#ax[0].imshow(img, cmap = 'gray')
-	
 	ax[1].imshow(mask > 0.5, cmap = 'gray')
 
 	ax[2].imshow(img)
@@ -62,17 +55,8 @@ for i in masks.itertuples():
 
     mask = rle_decode(i.rle_mask,(1280,1918))
 
-
-    #plt.figure()
-    #plt.imshow(mask > 0.5, cmap='gray', alpha = 0.5)
-    #plt.title(i.img)
-   
     print(i.img)
     img = imread(imageDir+i.img)
-    #plt.figure()
     plotMask(img,mask,i.img)
-
-    #plt.title(i.img)
-   
 
 plt.show()
