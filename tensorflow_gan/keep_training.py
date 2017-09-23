@@ -13,11 +13,11 @@ masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
 save_model_path = '/home/donald/Desktop/PYTHON/kaggle_car_competition/model_8l_deconv/'
 
 # number of training iterations
-training_iterations = 22500
+training_iterations = 100
 # number of iterations before printing diagnostics like cost
 sample_interval = 25
 # control early stopping. this number is the max number of sample_intervals to go by with no improvement in cost
-early_stop_threshold = 1000
+early_stop_threshold = 1500
 # leave as false these are broken for now
 use_xval = False
 tboard_logging = False
@@ -68,7 +68,7 @@ def add_to_queue(session, queue_operation, coordinator, list_of_images, list_of_
                 except tf.errors.CancelledError:
                         print('Input queue closed, exiting training')
 
-def train_network(total_iterations, keep_prob):
+def keep_training(total_iterations, keep_prob):
     # definition of the training loop
     def train_loop(iterations, learn_rate, keep_prob):
         begin_time = time.time()
@@ -105,6 +105,7 @@ def train_network(total_iterations, keep_prob):
                     test_cost = session.run(cvarch.mean_batch_cost, feed_dict=feed_dict_train)
                     dice = session.run(cvarch.dice_val, feed_dict=feed_dict_train)
                     session.run(cvarch.optim_function, feed_dict=feed_dict_train)
+                    # if xval set not specified, will just calculate cost for current batch and print
                     xvcost = test_cost
                     print('done with batch ' + str(int(i + 1)) + '/' + str(iterations) + ', current cost: '
                       + str(round(test_cost, 2)) + ', dice: ' + str(round(dice, 4)))
@@ -140,9 +141,9 @@ def train_network(total_iterations, keep_prob):
     # control flow for training - load in save location, etc. launch tensorflow session, prepare saver
     model_dir = save_model_path
     session = tf.Session()
-    session.run(tf.global_variables_initializer())
     saver = tf.train.Saver()
-    # if tboard output desired start a writer
+    saver.restore(session, save_model_path + 'save.ckpt')
+    print('model restored, continuing training...')
     # train the network on input training data
     execute_time = train_loop(total_iterations, cvarch.learn_rate, keep_prob)
     # save model and the graph and close session OFF FOR NOW
@@ -153,4 +154,4 @@ def train_network(total_iterations, keep_prob):
     # freeze the model and save it to disk after training # BROKEN
     freeze_model(save_model_path)
 
-train_network(training_iterations, retain_prob)
+keep_training(training_iterations, retain_prob)

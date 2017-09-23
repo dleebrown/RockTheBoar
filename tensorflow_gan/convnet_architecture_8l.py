@@ -12,26 +12,38 @@ image_z = 3
 # layer parameters
 conv1_shape = [3, 3, 3, 8]
 conv1_stride = [1, 1, 1, 1]
-conv1_pstride = [1, 1, 1, 1]
+conv1_pstride = [1, 2, 2, 1]
 
 conv2_shape = [3, 3, conv1_shape[3], 16]
 conv2_stride = [1, 1, 1, 1]
-conv2_pstride = [1, 1, 1, 1]
+conv2_pstride = [1, 2, 2, 1]
 
-conv3_shape = [3, 3, conv2_shape[3], 32]
+conv3_shape = [3, 3, conv2_shape[3], 64]
 conv3_stride = [1, 1, 1, 1]
 conv3_pstride = [1, 1, 1, 1]
 
-conv4_shape = [3, 3, conv3_shape[3], 16]
+conv4_shape = [3, 3, conv3_shape[3], 256]
 conv4_stride = [1, 1, 1, 1]
 conv4_pstride = [1, 1, 1, 1]
 
-conv5_shape = [3, 3, conv4_shape[3], 1]
+conv5_shape = [3, 3, conv4_shape[3], 512]
 conv5_stride = [1, 1, 1, 1]
 conv5_pstride = [1, 1, 1, 1]
 
+dc1_shape = [3, 3, 128, conv5_shape[3]]
+dc1_stride = [1, 1, 1, 1]
+dc1_output_shape = [1, 320, 480, dc1_shape[2]]
+
+dc2_shape = [3, 3, 64, dc1_output_shape[3]]
+dc2_stride = [1, 2, 2, 1]
+dc2_output_shape = [1, 640, 959, dc2_shape[2]]
+
+dc3_shape = [3, 3, 1, dc2_output_shape[3]]
+dc3_stride = [1, 2, 2, 1]
+dc3_output_shape = [1, 1280, 1918, dc3_shape[2]]
+
 # learning hyperparameters
-learn_rate = 1.e-3
+learn_rate = 5.e-4
 queue_depth = 25
 
 ########################################################################################################################
@@ -44,6 +56,15 @@ def initialize_conv_weights_bias(shape):
     stdev = math.sqrt(2.0 / float(shape[0]*shape[1]*shape[3]))
     init_weight = tf.Variable(tf.random_normal(shape, mean=0.00, stddev=stdev))
     init_bias = tf.Variable(tf.constant(0.00, shape=[shape[3]]))
+    return init_weight, init_bias
+
+
+def initialize_deconv_weights_bias(shape):
+    """define the weight and bias initialization for conv layer. shape should be [x1, x2, x3, x4]
+    """
+    stdev = math.sqrt(2.0 / float(shape[0]*shape[1]*shape[3]))
+    init_weight = tf.Variable(tf.random_normal(shape, mean=0.00, stddev=stdev))
+    init_bias = tf.Variable(tf.constant(0.00, shape=[shape[2]]))
     return init_weight, init_bias
 
 
@@ -74,6 +95,16 @@ def conv_layer_block(inputs, weights, conv_stride, bias, pool_stride, keep_prob,
     else:
         outputs = dropped
     return outputs
+
+
+def deconv_layer_block(inputs, weights, bias, output_shape, stride, activation='relu'):
+    deconv = tf.nn.conv2d_transpose(inputs, weights, output_shape, stride, padding='SAME')
+    deconv += bias
+    if activation == 'relu':
+        activate = tf.nn.relu(deconv)
+    else:
+        activate = tf.nn.sigmoid(deconv)
+    return activate
 
 smooth = 1.0
 
@@ -133,21 +164,27 @@ with tf.name_scope(prefix+'WEIGHTS'):
     cweight3, cbias3 = initialize_conv_weights_bias(conv3_shape)
     cweight4, cbias4 = initialize_conv_weights_bias(conv4_shape)
     cweight5, cbias5 = initialize_conv_weights_bias(conv5_shape)
+    dcweight1, dcbias1 = initialize_deconv_weights_bias(dc1_shape)
+    dcweight2, dcbias2 = initialize_deconv_weights_bias(dc2_shape)
+    dcweight3, dcbias3 = initialize_deconv_weights_bias(dc3_shape)
 
 
 # layers
 with tf.name_scope(prefix+'CV_LAYERS'):
     cv_block1 = conv_layer_block(batch_of_images, cweight1, conv1_stride, cbias1, conv1_pstride, dropout, drop=True,
-                                 maxpool=False)
+                                 maxpool=True)
     cv_block2 = conv_layer_block(cv_block1, cweight2, conv2_stride, cbias2, conv2_pstride, dropout, drop=True,
-                                 maxpool=False)
+                                 maxpool=True)
     cv_block3 = conv_layer_block(cv_block2, cweight3, conv3_stride, cbias3, conv3_pstride, dropout, drop=True,
                                  maxpool=False)
     cv_block4 = conv_layer_block(cv_block3, cweight4, conv4_stride, cbias4, conv4_pstride, dropout, drop=True,
                                  maxpool=False)
-    cv_block5 = conv_layer_block(cv_block4, cweight5, conv5_stride, cbias5, conv5_pstride, dropout, drop=False,
-                                 maxpool=False, activation='sigmoid')
-    network_outputs = tf.identity(cv_block5, name='outputs')
+    cv_block5 = conv_layer_block(cv_block4, cweight5, conv5_stride, cbias5, conv5_pstride, dropout, drop=True,
+                                 maxpool=False)
+    dc_block1 = deconv_layer_block(cv_block5, dcweight1, dcbias1, dc1_output_shape, dc1_stride)
+    dc_block2 = deconv_layer_block(dc_block1, dcweight2, dcbias2, dc2_output_shape, dc2_stride)
+    dc_block3 = deconv_layer_block(dc_block2, dcweight3, dcbias3, dc3_output_shape, dc3_stride, activation='sigmoid')
+    network_outputs = tf.identity(dc_block3, name='outputs')
 
 # cost
 """
