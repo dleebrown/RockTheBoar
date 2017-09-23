@@ -63,6 +63,10 @@ def random_image_reader(list_of_images, total_num_images, scale_factor):
     root_name = chosen_image.split('.')[0]
     mask_name = root_name + '_mask.gif'
     pixelvals, mask = image_input(car_image_directory + chosen_image, mask_image_directory + mask_name, scale_factor)
+    flipcondition = random.randint(0, 2)
+    if flipcondition == 1:
+        pixelvals = np.flip(pixelvals, axis=1)
+        mask = np.flip(mask, axis=1)
     # print(root_name+'.jpg, ', end='') # added to match submission format'
     #print(root_name+'.jpg, ',end="",flush=True) # added to match submission format'
     return pixelvals, mask

@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # control whether to plot histogram of run lengths
-histogram = True
+histogram = False
 
-pix_threshold = 5
+pix_threshold = 30
 
 input_csv = '/home/donald/Desktop/test_out.csv'
 output_csv = '/home/donald/Desktop/test_out_trim.csv'

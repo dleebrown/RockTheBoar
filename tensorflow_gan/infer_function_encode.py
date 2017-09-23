@@ -3,6 +3,10 @@ import tensorflow as tf
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+from skimage.restoration import (denoise_tv_chambolle, denoise_bilateral,
+                                 denoise_wavelet, estimate_sigma)
+from skimage.morphology import erosion, dilation, opening, closing, white_tophat
+from skimage.morphology import disk
 
 # EXAMPLE FOR USE AT THE BOTTOM OF THIS FILE
 #Execute: python infer_function_encode.py 2>&1 | tee submission1.txt
@@ -94,13 +98,16 @@ if __name__ == '__main__':
     # read in an image. for real inference these would be the test images read in one at a time within a loop
     im_list, all_masks, n_ims = inpipe.get_images_masks(image_dir, masks_dir)
     counter = 0
+
+    selem = disk(6)
+
     # USE THIS FOR STATEMENT TO RUN ON ALL IMAGES
     #for i in range(len(im_list)):
     # this for statement will just run on 0-999
-    for i in range(len(im_list[0:10])):
+    for i in range(len(im_list[0:100])):
         img, im_name = inpipe.not_random_image_reader(im_list, n_ims, 1.0, counter)
-        plt.imshow(img)
-        plt.show()
+        #plt.imshow(img)
+        #plt.show()
         # now feed the read-in image to infer_example along with initialized vars/session. Note that the read-in image
         # is assumed to be 1918x1280x3 numpy array with values normalized to range [0.0, 1.0]
         inferred = infer_example(img, session, outputs, input_images, queue_select, bsize, dropout)
@@ -110,9 +117,14 @@ if __name__ == '__main__':
         # some_function()
         #------------------ encoding ----------------
         inferred_10 = np.around(inferred)
-        plt.imshow(inferred)
-        plt.show()
-        rle = rle_encode(inferred_10)
+
+        denoise_10 = np.around(inferred_10)
+        denoise_10 = opening(denoise_10, selem)
+        #plt.imshow(inferred_10)
+        #plt.show()
+        #plt.imshow(denoise_10)
+        #plt.show()
+        rle = rle_encode(denoise_10)
         rle_string = rle_to_string(rle)
         #----------------------------------
 
