@@ -1,12 +1,12 @@
 from __future__ import print_function
 import tensorflow as tf
 import numpy as np
-import os
-import matplotlib.pyplot as plt
-from skimage.restoration import (denoise_tv_chambolle, denoise_bilateral,
-                                 denoise_wavelet, estimate_sigma)
-from skimage.morphology import erosion, dilation, opening, closing, white_tophat
+from skimage.morphology import opening
 from skimage.morphology import disk
+import multiprocessing
+from functools import partial
+import time
+import input_pipeline as inpipe
 
 # EXAMPLE FOR USE AT THE BOTTOM OF THIS FILE
 #Execute: python infer_function_encode.py 2>&1 | tee submission1.txt
@@ -37,12 +37,12 @@ def initialize_frozen_session(frozen_model):
     return input_images, outputs, queue_select, bsize, dropout, session
 
 
-def infer_example(input_image, open_session, outputs, input_images, queue_select, bsize, dropout):
+def infer_example(input_image, open_session, nnoutputs, input_images, queue_select, bsize, dropout):
     # runs inference on a single input image assuming initialize_frozen_session has already opened a tf session
-    input_image = np.reshape(input_image, (1, 1280, 1918, 3), order='F')
-    outputs = open_session.run(outputs, feed_dict={input_images: input_image, queue_select: 0, bsize: 1, dropout: 1.0})
-    outputs = np.reshape(outputs, (1280, 1918), order='F')
-    return outputs
+    input_image = np.reshape(input_image, (1, 1280, 1918, 3))
+    nnoutputs = open_session.run(nnoutputs, feed_dict={input_images: input_image, queue_select: 0, bsize: 1, dropout: 1.0})
+    nnoutputs = np.reshape(nnoutputs, (1280, 1918))
+    return nnoutputs
 
 
 #-----------------------------------------------------------------------
@@ -64,14 +64,24 @@ def rle_to_string(runs):
 #-----------------------------------------------------------------------
 
 
-
-
+# worker for multiprocessing
+def mf_worker(imtuple, frozen_params):
+    inferred = imtuple[0]
+    name = imtuple[1]
+    smooth = frozen_params[0]
+    disksize = frozen_params[1]
+    inferred_10 = np.around(inferred)
+    if smooth:
+        selem = disk(disksize)
+        inferred_10 = opening(inferred_10, selem)
+    rle = rle_encode(inferred_10)
+    rle_string = rle_to_string(rle)
+    return rle_string, name
 
 if __name__ == '__main__':
     # EXAMPLE OF HOW TO RUN INFERENCE
     # these are just for benching/reading in an image
-    import time
-    import input_pipeline as inpipe
+
 
     # just used for reading in an example image
     image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
@@ -85,6 +95,13 @@ if __name__ == '__main__':
     # set the path and name of the frozen model to load
     froze_mod = '/home/donald/Desktop/PYTHON/kaggle_car_competition/model_8l_deconv/frozen.model'
     # froze_mod = '/home/nes/Desktop/Caravana/frozen_models/5k-iter/frozen.model'
+    # number of images to run tensorflow on before starting the smoothing/rle encoding process
+    qdepth = 100
+    # number of processes to spawn for smoothing/rle encoding
+    nprocesses = 6
+    # control smoothing, and smoothing radius
+    dsize = 6
+    dosmooth = True
 
     # first thing to do is to run the initialize function to set up a session and retrieve graph variables
     # this is done outside of the inference loop so graph only loaded once
@@ -98,44 +115,46 @@ if __name__ == '__main__':
     # read in an image. for real inference these would be the test images read in one at a time within a loop
     im_list, all_masks, n_ims = inpipe.get_images_masks(image_dir, masks_dir)
     counter = 0
-
-    selem = disk(6)
-
     # USE THIS FOR STATEMENT TO RUN ON ALL IMAGES
     #for i in range(len(im_list)):
-    # this for statement will just run on 0-999
-    for i in range(len(im_list[0:100])):
-        img, im_name = inpipe.not_random_image_reader(im_list, n_ims, 1.0, counter)
-        #plt.imshow(img)
-        #plt.show()
-        # now feed the read-in image to infer_example along with initialized vars/session. Note that the read-in image
-        # is assumed to be 1918x1280x3 numpy array with values normalized to range [0.0, 1.0]
-        inferred = infer_example(img, session, outputs, input_images, queue_select, bsize, dropout)
-        # note that inferred returns a 1918x1280 mask (float values, so will need to apply rounding to 0, 1)
-        #print(np.shape(inferred))
-        # now could call a function that adds the mask and image name to the output file to submit to kaggle
-        # some_function()
-        #------------------ encoding ----------------
-        inferred_10 = np.around(inferred)
-
-        denoise_10 = np.around(inferred_10)
-        denoise_10 = opening(denoise_10, selem)
-        #plt.imshow(inferred_10)
-        #plt.show()
-        #plt.imshow(denoise_10)
-        #plt.show()
-        rle = rle_encode(denoise_10)
-        rle_string = rle_to_string(rle)
-        #----------------------------------
-
+    n_images_to_infer = len(im_list[0:10])
+    for i in range(0, n_images_to_infer, qdepth):
+        outputlist = []
+        if (i+nprocesses <= n_images_to_infer) and (i+qdepth <= n_images_to_infer):
+            for j in range(0, qdepth):
+                img, im_name = inpipe.not_random_image_reader(im_list, n_ims, 1.0, counter)
+                counter += 1
+                # now feed the read-in image to infer_example along with initialized vars/session. Note that the read-in image
+                # is assumed to be 1918x1280x3 numpy array with values normalized to range [0.0, 1.0]
+                inferred = infer_example(img, session, outputs, input_images, queue_select, bsize, dropout)
+                inputtuple = (inferred, im_name)
+                outputlist.append(inputtuple)
+        elif counter < n_images_to_infer:
+            for j in range(0, n_images_to_infer-i):
+                img, im_name = inpipe.not_random_image_reader(im_list, n_ims, 1.0, counter)
+                counter += 1
+                # now feed the read-in image to infer_example along with initialized vars/session. Note that the read-in image
+                # is assumed to be 1918x1280x3 numpy array with values normalized to range [0.0, 1.0]
+                inferred = infer_example(img, session, outputs, input_images, queue_select, bsize, dropout)
+                inputtuple = (inferred, im_name)
+                outputlist.append(inputtuple)
+        frozen_params = (dosmooth, dsize)
+        partial_worker = partial(mf_worker, frozen_params=frozen_params)
+        # initializes the pool of processes
+        pool = multiprocessing.Pool(nprocesses)
+        # maps partial_worker and list of stars to the pool, stores used parameters in a list
+        output_rle_name = pool.map(partial_worker, outputlist)
+        # end the list of functions to go to pool
+        pool.close()
+        pool.join()
         # write result to file
-        output_file.write(im_name+','+rle_string+'\n')
+        for k in range(0, len(output_rle_name)):
+            output_file.write(output_rle_name[k][1]+','+output_rle_name[k][0]+'\n')
         counter += 1
 
     # after the loop finishes you must close the tensorflow session to properly free hardware resources
     output_file.close()
     session.close()
-
     print('inference time: '+str(round(time.time()-init_split_time, 2)))
 
 

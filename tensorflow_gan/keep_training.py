@@ -13,11 +13,11 @@ masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
 save_model_path = '/home/donald/Desktop/PYTHON/kaggle_car_competition/model_8l_deconv/'
 
 # number of training iterations
-training_iterations = 22500
+training_iterations = 100
 # number of iterations before printing diagnostics like cost
 sample_interval = 25
 # control early stopping. this number is the max number of sample_intervals to go by with no improvement in cost
-early_stop_threshold = 1000
+early_stop_threshold = 1500
 # leave as false these are broken for now
 use_xval = False
 tboard_logging = False
