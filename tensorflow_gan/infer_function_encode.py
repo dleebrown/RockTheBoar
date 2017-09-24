@@ -93,7 +93,7 @@ if __name__ == '__main__':
     # masks_dir = '/home/nes/Desktop/Caravana/input/train_masks/'
 
     # set the path and name of the frozen model to load
-    froze_mod = '/home/donald/Desktop/PYTHON/kaggle_car_competition/model_8l_deconv/frozen.model'
+    froze_mod = '/home/donald/Desktop/PYTHON/kaggle_car_competition/model_12l_deconv/frozen.model'
     # froze_mod = '/home/nes/Desktop/Caravana/frozen_models/5k-iter/frozen.model'
     # number of images to run tensorflow on before starting the smoothing/rle encoding process
     qdepth = 100

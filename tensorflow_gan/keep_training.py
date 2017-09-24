@@ -3,17 +3,17 @@ import tensorflow as tf
 import time
 import input_pipeline as inpipe
 import threading
-import convnet_architecture_8l as cvarch
+import convnet_architecture_12l as cvarch
 import matplotlib.pyplot as plt
 
 # directory with images and masks
 image_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train/'
 masks_dir = '/home/donald/Desktop/PYTHON/kaggle_car_competition/train_masks/'
 # path to save the tensorflow and frozen models
-save_model_path = '/home/donald/Desktop/PYTHON/kaggle_car_competition/model_8l_deconv/'
+save_model_path = '/home/donald/Desktop/PYTHON/kaggle_car_competition/model_12l_deconv/'
 
 # number of training iterations
-training_iterations = 100
+training_iterations = 20000
 # number of iterations before printing diagnostics like cost
 sample_interval = 25
 # control early stopping. this number is the max number of sample_intervals to go by with no improvement in cost
