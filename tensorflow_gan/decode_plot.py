@@ -20,7 +20,7 @@ def rle_decode(mask_rle, shape):
     img = np.zeros(shape[0]*shape[1], dtype=np.uint8)
     for lo, hi in zip(starts, ends):
         img[lo:hi] = 1
-    return img.reshape(shape)
+    return img.reshape(shape, order= 'F')
 
 #-----------------------------------------------------------------------
 
@@ -41,22 +41,36 @@ def plotMask(img, mask, imtitle):
 
 #-----------------------------------------------------------------------
 
-saved_csv = '../../test_output_noF.csv'
+#saved_csv = '../../test_output_noF.csv'
+saved_csv = '../../ayyF_encode.csv'
 imageDir = '../../input/train/'
 outputDir = '../../plots/'
 
-masks = pd.read_csv(saved_csv)
-print(masks)
+#masks = pd.read_csv(saved_csv)
+#print(masks)
 
-num_masks = masks.shape[0]
-print('Total masks to encode/decode =', num_masks)
+#num_masks = masks.shape[0]
+#print('Total masks to encode/decode =', num_masks)
 
-for i in masks.itertuples():
 
-    mask = rle_decode(i.rle_mask,(1280,1918))
+#for i in masks.itertuples():
+chunksize = 1
 
-    print(i.img)
-    img = imread(imageDir+i.img)
-    plotMask(img,mask,i.img)
+for chunk in pd.read_csv(saved_csv, chunksize=chunksize):
 
-plt.show()
+    for i in chunk.itertuples():
+
+
+
+    #for i in masks.itertuples(1):
+
+        mask = rle_decode(i.rle_mask,(1280,1918))
+
+        #print(i.img)
+        #img = imread(imageDir+i.img)
+        #plotMask(img,mask,i.img)
+
+        plt.imshow(mask)
+
+        plt.show()
+        raw_input()
