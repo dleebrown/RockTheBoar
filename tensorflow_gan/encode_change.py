@@ -78,7 +78,7 @@ def plotMask(img, mask, imtitle):
 #-----------------------------------------------------------------------
 
 saved_csv = '../../test_output_noF.csv'
-imageDir = '../../input/train/'
+#imageDir = '../../input/train/'
 output_csv = '../../changed_encode.csv'
 
 masks = pd.read_csv(saved_csv)
