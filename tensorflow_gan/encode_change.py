@@ -77,29 +77,34 @@ def plotMask(img, mask, imtitle):
 
 #-----------------------------------------------------------------------
 
-saved_csv = '../../test_output_noF.csv'
-#imageDir = '../../input/train/'
-output_csv = '../../changed_encode.csv'
+saved_csv = '../../test_out_trim.csv'
+#saved_csv = '../../test_output_noF.csv'
+output_csv = '../../ayyF_encode.csv'
+#masks = pd.read_csv(saved_csv)
+#print(masks)
 
-masks = pd.read_csv(saved_csv)
-print(masks)
-
-num_masks = masks.shape[0]
-print('Total masks to encode/decode =', num_masks)
+#num_masks = masks.shape[0]
+#print('Total masks to encode/decode =', num_masks)
 
 output_file = open(output_csv, mode='w')
 output_file.write('img,rle_mask\n')
 
-for i in masks.itertuples():
+#for i in masks.itertuples():
+chunksize = 1000
 
-    mask = rle_decode(i.rle_mask,(1280,1918))
+for chunk in pd.read_csv(saved_csv, chunksize=chunksize):
 
-    rle = rle_encode_F(mask)
-    rle_string = rle_to_string(rle)
+    for i in chunk.itertuples():
+       #print i
+       mask = rle_decode(i.rle_mask,(1280,1918))
 
-    #print(i.img +','+ rle_string)
-    #print(50*'-')
-    output_file.write(i.img+','+rle_string+'\n')
+       rle = rle_encode_F(mask)
+       rle_string = rle_to_string(rle)
+       #print i
+       #print(i.img +','+ rle_string)
+       #print(50*'-')
+       output_file.write(i.img+','+rle_string+'\n')
+
 
 output_file.close()
 #plt.show()
