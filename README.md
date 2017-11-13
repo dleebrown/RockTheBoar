@@ -18,7 +18,7 @@ The network is trained on images of cars, with corresponding masks as targets. T
 
 ## [Keras-implementation](https://github.com/nesar/RockTheBoar/tree/master/keras_implementation)
 
-Initial Prototyping for a simple convolutional network of 3 layers is implemented. The input/output pipelines were forked from [https://www.kaggle.com/bguberfain](Bruno G. do Amaral)'s Naive Keras model. Network architecture can be edited in _simple_model.py_.
+Initial Prototyping for a simple convolutional network of 3 layers is implemented. The input/output pipelines were forked from [Bruno G. do Amaral](https://www.kaggle.com/bguberfain)'s Naive Keras model. Network architecture can be edited in _simple_model.py_.
 
 ## Authors
 Donald Lee-Brown([@dleebrown](https://github.com/dleebrown)), Sinan Deger([@sinandeger](https://github.com/sinandeger)) and Nesar Ramachandra ([@nesar](https://github.com/sinandeger))
