@@ -2,7 +2,7 @@
 
 Code written as part of the [Kaggle Carvana Image Masking Challenge](https://www.kaggle.com/c/carvana-image-masking-challenge). The overal goal of this competition was to design an algorithm to accurately mask cars in images. 
 
-## [https://github.com/nesar/RockTheBoar/tree/master/tensorflow_gan](TensorFlow implementation)
+## [TensorFlow-implementation](https://github.com/nesar/RockTheBoar/tree/master/tensorflow_gan)
 
 This network was used for our final submission. The architecture is a 12 layer autoencoder-style fully convolutional neural network - 6 convolutional layers followed by 6 deconvolutional layers. Dice co-effecient was used as a accuracy metric, and Adaptive Moment Estimation (Adam) is used for gradient descent optimization. 
 
@@ -16,7 +16,7 @@ Functions of some of the key scripts:
 
 The network is trained on images of cars, with corresponding masks as targets. The fully trained network provides a pixel-wise "probability of car" estimate. 
 
-## [https://github.com/nesar/RockTheBoar/tree/master/keras_implementation](Keras implementation)
+## [Keras-implementation](https://github.com/nesar/RockTheBoar/tree/master/keras_implementation)
 
 Initial Prototyping for a simple convolutional network of 3 layers is implemented. The input/output pipelines were forked from [https://www.kaggle.com/bguberfain](Bruno G. do Amaral)'s Naive Keras model. Network architecture can be edited in _simple_model.py_.
 
